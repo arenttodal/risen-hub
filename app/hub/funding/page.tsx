@@ -10,6 +10,13 @@ import { schemeStatusLabels, strengthLabels } from '@/components/risen/funding-l
 
 export const metadata: Metadata = { title: 'Finansiering · Risen Hub' };
 
+/**
+ * When the imported catalogue was last true. See docs/LEGACY-IMPORT-INVENTORY.md.
+ * Shown rather than hidden: research with a date on it can be judged, research
+ * without one just looks current.
+ */
+const LEGACY_SNAPSHOT = '2026-09-08';
+
 export default async function FundingPage() {
   const [schemesResult, anglesResult, projectsResult] = await Promise.all([
     listFundingSchemes(),
@@ -41,6 +48,9 @@ export default async function FundingPage() {
   }
 
   const unverified = schemes.filter(scheme => !isVerified(scheme));
+  const withoutSource = schemes.filter(scheme => !scheme.sourceUrl);
+  const expired = schemes.filter(scheme => scheme.status === 'passed');
+  const imported = schemes.filter(scheme => scheme.provenance);
 
   return (
     <div className="hub-content">
@@ -63,8 +73,24 @@ export default async function FundingPage() {
             <strong>
               {unverified.length} av {schemes.length} ordninger er ikke bekreftet.
             </strong>{' '}
-            Datoene under er research, ikke fakta. Ingen av dem har kilde eller verifiseringsdato,
-            så de må sjekkes mot ordningens egne sider før noen planlegger etter dem.
+            Datoene under er research, ikke fakta.{' '}
+            {withoutSource.length > 0 && (
+              <>
+                {withoutSource.length} av dem mangler kilde helt.{' '}
+              </>
+            )}
+            {imported.length > 0 && (
+              <>
+                {imported.length} er importert fra Småbruk Støttehub slik den så ut{' '}
+                {formatDate(LEGACY_SNAPSHOT)} og er ikke sjekket siden.{' '}
+              </>
+            )}
+            {expired.length > 0 && (
+              <>
+                {expired.length} frist{expired.length === 1 ? '' : 'er'} har allerede gått ut.{' '}
+              </>
+            )}
+            Sjekk ordningens egen side før noen planlegger etter dette.
           </span>
         </p>
       )}
@@ -80,6 +106,7 @@ export default async function FundingPage() {
           <thead>
             <tr>
               <th>Ordning</th>
+              <th>Vilkår</th>
               <th>Prosjekt</th>
               <th>Frist</th>
               <th>Status</th>
@@ -93,7 +120,15 @@ export default async function FundingPage() {
                 <tr key={scheme.id}>
                   <td>
                     <strong>{scheme.name}</strong>
+                    {scheme.provider && <small>{scheme.provider}</small>}
                     {scheme.eligibilitySummary && <small>{scheme.eligibilitySummary}</small>}
+                  </td>
+                  <td>
+                    {/* The funder's own wording, kept as text. "Normalt ca. 30 %"
+                        is a hedge, and a number here would read as a promise. */}
+                    {scheme.supportRate ?? '—'}
+                    {scheme.matchRule && <small>{scheme.matchRule}</small>}
+                    {scheme.cycle && <small>{scheme.cycle}</small>}
                   </td>
                   <td>{projectName(scheme.projectId)}</td>
                   <td>
@@ -106,6 +141,7 @@ export default async function FundingPage() {
                     <span className={`status-pill scheme-${scheme.status}`}>
                       {schemeStatusLabels[scheme.status]}
                     </span>
+                    {scheme.priorityNote && <small>{scheme.priorityNote}</small>}
                   </td>
                   <td>
                     {scheme.sourceUrl ? (
@@ -123,7 +159,8 @@ export default async function FundingPage() {
         </table>
         <p className="panel-foot-note">
           En frist uten kilde og verifiseringsdato regnes som uverifisert uansett hvor sannsynlig
-          den ser ut. Det er en regel i CLAUDE.md, ikke en preferanse.
+          den ser ut. Det er en regel i CLAUDE.md, ikke en preferanse. Prioritetsnotatene under
+          status er vurderinger som fulgte med researchen, ikke noe ordningen selv har sagt.
         </p>
       </section>
 
@@ -137,13 +174,12 @@ export default async function FundingPage() {
         {angles.map(angle => (
           <article className="angle-row" key={angle.id}>
             <div className="angle-head">
-              <span className="kicker">
-                {angle.id} · {strengthLabels[angle.strength]}
-              </span>
+              <span className="kicker">{strengthLabels[angle.strength]}</span>
               <strong>{angle.title}</strong>
             </div>
             {angle.description && <p>{angle.description}</p>}
             <div className="angle-foot">
+              {angle.tags && <span>{angle.tags.split(',').join(' · ')}</span>}
               <span>
                 Gjelder:{' '}
                 {angle.projectIds.length === 0

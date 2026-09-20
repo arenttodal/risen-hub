@@ -161,12 +161,22 @@ export const seedWorkItems: WorkItem[] = [
  * interface labels them accordingly. Fill in the source and the date before
  * anyone plans around a date here.
  */
-export const seedFundingSchemes: FundingScheme[] = [
-  { id: 'fs-teft', name: 'TEFT', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 1. oktober 2026. Ikke bekreftet.', deadlineAt: '2026-10-01', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
-  { id: 'fs-kulturfond', name: 'Regionalt kulturfond', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 15. januar 2027. Ikke bekreftet.', deadlineAt: '2027-01-15', verifiedAt: null, status: 'unverified', projectId: 'festival', visibility: 'members' },
-  { id: 'fs-spillemidler', name: 'Spillemidler kulturarena', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 15. februar 2027. Ikke bekreftet.', deadlineAt: '2027-02-15', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
-  { id: 'fs-kulturrom', name: 'Kulturrom / Gjenklang', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 1. mars 2027. Ikke bekreftet.', deadlineAt: '2027-03-01', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
-];
+/**
+ * Deliberately empty.
+ *
+ * This used to hold four invented placeholders — TEFT, Regionalt kulturfond,
+ * Spillemidler kulturarena and Kulturrom / Gjenklang — with no source URL and
+ * summaries that said *Antatt frist … Ikke bekreftet*. All four now exist for
+ * real, with real deadlines and real source URLs, in the catalogue imported
+ * from `legacy/smabruk-stottehub/`. Keeping both meant the same funder appeared
+ * twice, once fabricated, which is exactly the duplicate source of truth
+ * CLAUDE.md rule 3 forbids.
+ *
+ * Rows already written to a database are left alone — the import deletes
+ * nothing. docs/LEGACY-IMPORT-INVENTORY.md says how to retire them by hand.
+ * Run `npm run db:local` to get the real catalogue.
+ */
+export const seedFundingSchemes: FundingScheme[] = [];
 
 /** Idea bank. Classification follows PLATFORM-SPEC.md section 6. */
 export const seedFundingAngles: FundingAngle[] = [

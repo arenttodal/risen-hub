@@ -17,6 +17,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildSeedSql } from './seed-sql.mjs';
+import { buildLegacyImportSql } from './legacy-import-sql.mjs';
 import { applyMigrations } from './migrations.mjs';
 
 const args = process.argv.slice(2);
@@ -63,6 +64,23 @@ if (flag('seed')) {
   console.log('✓ seeded the remote database');
 } else {
   console.log('· skipped seeding (pass --seed to insert the demo records)');
+}
+
+// 3. The legacy funding catalogue, also only when asked for.
+//
+// It upserts and deletes nothing, so it is safe to re-run — but it writes real
+// rows to the database the deployed Worker reads, so it stays opt-in like the
+// seed rather than running on every migration.
+if (flag('legacy')) {
+  const { sql, data } = buildLegacyImportSql();
+  execSql('legacy-import', sql);
+  console.log(
+    `✓ imported ${data.angles.length} angles, ${data.schemes.length} schemes, ` +
+      `${data.documents.length} document requirements, ${data.templates.length} templates`,
+  );
+  console.log('  Every row is unverified and stamped with its 2026-09-08 snapshot date.');
+} else {
+  console.log('· skipped the funding catalogue (pass --legacy to import it)');
 }
 
 console.log(`\nDone. Redeploy, then check that /hub no longer shows the "Seed-data" notice.`);

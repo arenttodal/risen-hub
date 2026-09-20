@@ -214,12 +214,33 @@ export const fundingSchemes = sqliteTable(
     verifiedAt: text('verified_at'),
     /** `unverified | verified | passed | closed` */
     status: text('status').notNull().default('unverified'),
+    /** How often the scheme opens, e.g. "Løpende" or "Årlig via kommunen". */
+    cycle: text('cycle'),
+    /**
+     * Free text, deliberately. The source says things like "Normalt ca. 30 %"
+     * and "Vanligvis inntil 15 000 kr" — neither is a number, and parsing them
+     * into one would turn a hedge into a promise.
+     */
+    supportRate: text('support_rate'),
+    /** What the applicant must put in, in the scheme's own words. */
+    matchRule: text('match_rule'),
+    /** A human urgency note carried over from the archive, such as "HASTER". */
+    priorityNote: text('priority_note'),
+    templateKey: text('template_key'),
+    /** Where this row came from, e.g. `legacy_mvp_2026_09_08`. Null when typed in. */
+    provenance: text('provenance'),
+    /** Stable key from the source, so re-importing updates instead of duplicating. */
+    legacyId: text('legacy_id'),
     projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
     visibility: visibility(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  table => [index('funding_schemes_status').on(table.status), index('funding_schemes_deadline').on(table.deadlineAt)],
+  table => [
+    index('funding_schemes_status').on(table.status),
+    index('funding_schemes_deadline').on(table.deadlineAt),
+    uniqueIndex('funding_schemes_legacy').on(table.legacyId),
+  ],
 );
 
 /** The idea bank. Classification follows PLATFORM-SPEC.md section 6. */
@@ -235,11 +256,19 @@ export const fundingAngles = sqliteTable(
     missing: text('missing'),
     sourceUrl: text('source_url'),
     verifiedAt: text('verified_at'),
+    /** Comma-separated keywords from the source. Not a taxonomy, just hints. */
+    tags: text('tags'),
+    provenance: text('provenance'),
+    legacyId: text('legacy_id'),
+    position: integer('position').notNull().default(0),
     visibility: visibility(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  table => [index('funding_angles_strength').on(table.strength)],
+  table => [
+    index('funding_angles_strength').on(table.strength),
+    uniqueIndex('funding_angles_legacy').on(table.legacyId),
+  ],
 );
 
 /** An angle may argue for several projects; a project may be argued many ways. */
@@ -254,6 +283,80 @@ export const fundingAngleProjects = sqliteTable(
       .references(() => projects.id, { onDelete: 'cascade' }),
   },
   table => [primaryKey({ columns: [table.angleId, table.projectId] })],
+);
+
+/**
+ * What a funder asks you to hand in.
+ *
+ * `source` records how we know about a requirement. `catalogued` means the
+ * archive described it; `referenced` means a scheme demanded it but the archive
+ * never described it, so `description` is null and stays null. Inventing the
+ * missing text would turn a gap in the source into a claim about a funder.
+ */
+export const documentRequirements = sqliteTable(
+  'document_requirements',
+  {
+    id: text('id').primaryKey(),
+    legacyId: text('legacy_id'),
+    name: text('name').notNull(),
+    description: text('description'),
+    /** `catalogued | referenced | local` */
+    source: text('source').notNull().default('local'),
+    provenance: text('provenance'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [uniqueIndex('document_requirements_legacy').on(table.legacyId)],
+);
+
+/** Which schemes a given angle argues for. */
+export const fundingSchemeAngles = sqliteTable(
+  'funding_scheme_angles',
+  {
+    schemeId: text('scheme_id')
+      .notNull()
+      .references(() => fundingSchemes.id, { onDelete: 'cascade' }),
+    angleId: text('angle_id')
+      .notNull()
+      .references(() => fundingAngles.id, { onDelete: 'cascade' }),
+  },
+  table => [primaryKey({ columns: [table.schemeId, table.angleId] })],
+);
+
+/** What a scheme requires. `obtained` is the farm's own progress, never imported. */
+export const fundingSchemeDocuments = sqliteTable(
+  'funding_scheme_documents',
+  {
+    schemeId: text('scheme_id')
+      .notNull()
+      .references(() => fundingSchemes.id, { onDelete: 'cascade' }),
+    documentId: text('document_id')
+      .notNull()
+      .references(() => documentRequirements.id, { onDelete: 'cascade' }),
+  },
+  table => [primaryKey({ columns: [table.schemeId, table.documentId] })],
+);
+
+/**
+ * Application boilerplate, imported verbatim.
+ *
+ * `sections` is a JSON object of named paragraphs. Placeholders such as
+ * `[GÅRDSNAVN]` are kept exactly as written: filling them in is the applicant's
+ * job, and a template that silently guessed would be signed without being read.
+ */
+export const applicationTemplates = sqliteTable(
+  'application_templates',
+  {
+    id: text('id').primaryKey(),
+    legacyId: text('legacy_id'),
+    title: text('title').notNull(),
+    /** JSON: { summary, need, method, impact }. */
+    sections: text('sections').notNull(),
+    provenance: text('provenance'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [uniqueIndex('application_templates_legacy').on(table.legacyId)],
 );
 
 /** Festival, dugnad weekends and gatherings. Public sign-up still lives in `rsvps`. */
@@ -458,3 +561,5 @@ export type WorkItemComment = typeof workItemComments.$inferSelect;
 export type Label = typeof labels.$inferSelect;
 export type ShoppingList = typeof shoppingLists.$inferSelect;
 export type ShoppingItem = typeof shoppingItems.$inferSelect;
+export type DocumentRequirement = typeof documentRequirements.$inferSelect;
+export type ApplicationTemplate = typeof applicationTemplates.$inferSelect;

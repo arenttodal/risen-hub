@@ -219,6 +219,11 @@ function toScheme(row: typeof fundingSchemes.$inferSelect): FundingScheme {
     status: row.status as FundingScheme['status'],
     projectId: row.projectId,
     visibility: row.visibility as FundingScheme['visibility'],
+    cycle: row.cycle,
+    supportRate: row.supportRate,
+    matchRule: row.matchRule,
+    priorityNote: row.priorityNote,
+    provenance: row.provenance,
   };
 }
 
@@ -242,7 +247,7 @@ export async function listFundingAngles(): Promise<Loaded<FundingAngle[]>> {
   if (!db) return seeded(seedFundingAngles);
   try {
     const [rows, links] = await Promise.all([
-      db.select().from(fundingAngles).orderBy(asc(fundingAngles.id)),
+      db.select().from(fundingAngles).orderBy(asc(fundingAngles.position), asc(fundingAngles.id)),
       db.select().from(fundingAngleProjects),
     ]);
     const data = rows.map(row => ({
@@ -255,6 +260,8 @@ export async function listFundingAngles(): Promise<Loaded<FundingAngle[]>> {
       verifiedAt: row.verifiedAt,
       projectIds: links.filter(link => link.angleId === row.id).map(link => link.projectId),
       visibility: row.visibility as FundingAngle['visibility'],
+      tags: row.tags,
+      provenance: row.provenance,
     }));
     return { data, source: 'database' };
   } catch (error) {

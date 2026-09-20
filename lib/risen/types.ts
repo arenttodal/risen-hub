@@ -136,6 +136,15 @@ export interface FundingScheme {
   status: SchemeStatus;
   projectId: string | null;
   visibility: Visibility;
+  /** How often it opens, in the scheme's own words. */
+  cycle?: string | null;
+  /** Free text such as "Normalt ca. 30 %". Never a number — see db/schema.ts. */
+  supportRate?: string | null;
+  matchRule?: string | null;
+  /** A human urgency note carried in from research, such as "HASTER". */
+  priorityNote?: string | null;
+  /** Where the row came from. Null means someone typed it in here. */
+  provenance?: string | null;
 }
 
 export interface FundingAngle {
@@ -148,6 +157,8 @@ export interface FundingAngle {
   verifiedAt: string | null;
   projectIds: string[];
   visibility: Visibility;
+  tags?: string | null;
+  provenance?: string | null;
 }
 
 export interface RisenEvent {
