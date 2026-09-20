@@ -6,7 +6,7 @@ import { getProject, listMilestones, listPlaces, listWorkItems } from '@/lib/ris
 import { fundedShare, type Milestone, type WorkItem } from '@/lib/risen/types';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
 import { EmptyState } from '@/components/risen/empty-state';
-import { money, priorityLabels, statusLabels, visibilityLabels } from '@/components/risen/project-card';
+import { money, statusLabels, visibilityLabels } from '@/components/risen/project-card';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -72,7 +72,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
       <header className="detail-head">
         <div>
-          <span className="kicker">{project.category}</span>
+          <span className="kicker">{project.category.toUpperCase()}</span>
           <h2>{project.name}</h2>
           {project.summary && <p className="detail-summary">{project.summary}</p>}
           <div className="detail-tags">
@@ -90,7 +90,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         </div>
         {project.nextAction && (
           <aside className="detail-next">
-            <span className="kicker">Neste steg</span>
+            <span className="kicker">NESTE STEG</span>
             <strong>{project.nextAction}</strong>
           </aside>
         )}
@@ -123,7 +123,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         <section className="hub-panel">
           <div className="panel-heading">
             <div>
-              <span className="kicker">Milepæler</span>
+              <span className="kicker">MILEPÆLER</span>
               <h3>Veien videre</h3>
             </div>
           </div>
@@ -153,7 +153,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
         <section className="hub-panel">
           <div className="panel-heading">
             <div>
-              <span className="kicker">Arbeid</span>
+              <span className="kicker">ARBEID</span>
               <h3>Knyttet til prosjektet</h3>
             </div>
             <Link href="/hub/work">Work</Link>
@@ -165,7 +165,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           ) : (
             work.map(item => (
               <article className="work-row" key={item.id}>
-                <span className={`priority ${item.priority}`}>{priorityLabels[item.priority]}</span>
+                <span className={`priority ${item.priority}`} />
                 <div>
                   <strong>{item.title}</strong>
                   <span>
@@ -181,7 +181,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
       <div className="detail-pending">
         <EmptyState
-          kicker="Ikke bygget ennå"
+          kicker="IKKE BYGGET ENNÅ"
           title="Finansiering, budsjett, filer og publisering"
           description="Prosjektet er den kanoniske beholderen for alt dette. Fanene henger på den samme raden du ser over, slik at ingen modul lager sin egen kopi av prosjektet."
           points={[

@@ -16,7 +16,7 @@ export interface ModuleIntro {
  */
 export const moduleIntros: Record<string, ModuleIntro> = {
   work: {
-    kicker: 'Modul under arbeid',
+    kicker: 'MODUL UNDER ARBEID',
     title: 'Alt arbeid på ett sted',
     description:
       'Én innboks for oppgaver, reparasjoner, innkjøp og dugnadskandidater. Fangsten skal være liten: tittel, prosjekt eller sted, type og prioritet. Resten fylles ut senere.',
@@ -29,7 +29,7 @@ export const moduleIntros: Record<string, ModuleIntro> = {
     note: 'Oppgavene finnes allerede i datamodellen og vises på Oversikt og på hvert prosjekt. Denne modulen får egne visninger i neste steg.',
   },
   funding: {
-    kicker: 'Modul under arbeid',
+    kicker: 'MODUL UNDER ARBEID',
     title: 'Finansiering med sporbare kilder',
     description:
       'Støtteordninger, søknader, gjenbrukbare svarblokker, dokumentkrav og frister — knyttet til de samme prosjektene som resten av plattformen.',
@@ -42,7 +42,7 @@ export const moduleIntros: Record<string, ModuleIntro> = {
     note: 'Ordninger importeres først når kilde og verifiseringsdato følger med. Ingen frister vises som gyldige uten dokumentert kilde.',
   },
   farm: {
-    kicker: 'Modul under arbeid',
+    kicker: 'MODUL UNDER ARBEID',
     title: 'Gården som kilde til sannhet',
     description:
       'Bygninger, områder, tilstand, historikk, bilder og dokumentasjon. Et sted kan være knyttet til mange prosjekter over tid, og lever videre når prosjektene er ferdige.',
@@ -55,7 +55,7 @@ export const moduleIntros: Record<string, ModuleIntro> = {
     note: 'Tabellen `places` ligger i databasen. Skjermbildene bygges etter at Prosjekter er ferdig.',
   },
   events: {
-    kicker: 'Modul under arbeid',
+    kicker: 'MODUL UNDER ARBEID',
     title: 'Arrangement, dugnad og program',
     description:
       'Festival, residencies og samlinger med program, vaktlister og frivilligbehov — koblet til prosjektene arrangementene støtter.',
@@ -68,7 +68,7 @@ export const moduleIntros: Record<string, ModuleIntro> = {
     note: 'Den offentlige påmeldingen på forsiden er en forhåndsvisning med egen RSVP-tabell. Den flyttes hit når arrangementsmodellen er klar.',
   },
   community: {
-    kicker: 'Modul under arbeid',
+    kicker: 'MODUL UNDER ARBEID',
     title: 'Foreningen og beslutningene',
     description:
       'Medlemmer, roller, forslag, avstemninger og vedtak. Rollefeltene `admin`, `member`, `volunteer` og `public` ligger allerede i datamodellen.',
@@ -81,7 +81,7 @@ export const moduleIntros: Record<string, ModuleIntro> = {
     note: 'Innlogging og tilgangsstyring kommer i fase 3. Inntil da skal ingen reelle personopplysninger legges inn.',
   },
   public: {
-    kicker: 'Modul under arbeid',
+    kicker: 'MODUL UNDER ARBEID',
     title: 'Kontrollert publisering',
     description:
       'Velg hvilke prosjekter, felter og oppdateringer som skal ut. Den offentlige siden leser en egen projeksjon og aldri de interne radene direkte.',

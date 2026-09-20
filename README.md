@@ -26,8 +26,8 @@ Without `npm run db:local` the app still runs: reads fall back to the seed
 dataset and the interface says so on screen.
 
 Deploys bind D1 only when `CLOUDFLARE_D1_DATABASE_ID` is set to a real database
-id; otherwise the build skips the binding rather than failing. See
-`docs/decisions/0001-d1-persistence.md`.
+id; otherwise the build skips the binding rather than failing. To connect the
+deployed database, follow `docs/D1-SETUP.md`.
 
 ## Checks
 

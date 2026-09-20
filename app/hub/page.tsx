@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, BookOpen } from 'lucide-react';
+import { ArrowRight, BookOpen, Hammer } from 'lucide-react';
 import { deadlines, fundingAngles } from '@/data/risen';
 import { listProjects, listWorkItems } from '@/lib/risen/repository';
 import { JosefaTrigger } from '@/components/risen/josefa-context';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
-import { money, priorityLabels } from '@/components/risen/project-card';
+import { money } from '@/components/risen/project-card';
 
 export const metadata: Metadata = { title: 'Overview · Risen Hub' };
 
@@ -22,9 +22,9 @@ export default async function OverviewPage() {
     <div className="hub-content">
       <DataSourceNotice source={projectsResult.source} error={projectsResult.error} />
 
-      <section className="focus-strip">
+      <section className="focus-card">
         <div>
-          <span className="kicker">Neste viktige trekk</span>
+          <span className="kicker">NESTE VIKTIGE TREKK</span>
           <h2>Gjør TEFT-søknaden sendeklar.</h2>
           <p>Fristen er 1. oktober. Tre dokumenter og to budsjettposter mangler.</p>
         </div>
@@ -58,12 +58,15 @@ export default async function OverviewPage() {
 
       <div className="hub-grid">
         <section className="hub-panel projects-panel">
-          <PanelHeading kicker="Prosjekter" title="Det vi bygger nå" action="Se alle" href="/hub/projects" />
+          <PanelHeading kicker="PROSJEKTER" title="Det vi bygger nå" action="Se alle" href="/hub/projects" />
           {projects.length === 0 ? (
             <p className="panel-empty">Ingen prosjekter er opprettet ennå.</p>
           ) : (
             projects.map(project => (
               <article className="project-row" key={project.id}>
+                <div className="project-icon">
+                  <Hammer size={17} />
+                </div>
                 <div className="project-copy">
                   <strong>
                     <Link href={`/hub/projects/${project.id}`}>{project.name}</Link>
@@ -83,7 +86,7 @@ export default async function OverviewPage() {
         </section>
 
         <section className="hub-panel deadline-panel">
-          <PanelHeading kicker="Finansiering" title="Kommende frister" action="Kalender" href="/hub/funding" />
+          <PanelHeading kicker="FUNDING" title="Kommende frister" action="Kalender" href="/hub/funding" />
           {deadlines.map(deadline => (
             <article className="deadline-row" key={deadline.title}>
               <time>{deadline.date}</time>
@@ -91,9 +94,7 @@ export default async function OverviewPage() {
                 <strong>{deadline.title}</strong>
                 <span>{deadline.project}</span>
               </div>
-              <span className={`deadline-state ${deadline.state}`}>
-                {deadline.state === 'urgent' ? 'Haster' : 'Kommende'}
-              </span>
+              <i className={deadline.state} />
             </article>
           ))}
           <p className="panel-foot-note">
@@ -103,13 +104,13 @@ export default async function OverviewPage() {
         </section>
 
         <section className="hub-panel work-panel">
-          <PanelHeading kicker="Arbeid" title="Klar til å tas tak i" action="Se alt arbeid" href="/hub/work" />
+          <PanelHeading kicker="WORK" title="Klar til å tas tak i" action="Se alt arbeid" href="/hub/work" />
           {openWork.length === 0 ? (
             <p className="panel-empty">Ingen åpne oppgaver.</p>
           ) : (
             openWork.slice(0, 3).map(item => (
               <article className="work-row" key={item.id}>
-                <span className={`priority ${item.priority}`}>{priorityLabels[item.priority]}</span>
+                <span className={`priority ${item.priority}`} />
                 <div>
                   <strong>{item.title}</strong>
                   <span>
@@ -125,7 +126,7 @@ export default async function OverviewPage() {
         </section>
 
         <section className="hub-panel angle-panel">
-          <PanelHeading kicker="Idébank" title="Funding angles" action="Se alle" href="/hub/funding" />
+          <PanelHeading kicker="IDÉBANK" title="Funding angles" action="Se alle" href="/hub/funding" />
           {fundingAngles.map(angle => (
             <article key={angle.id}>
               <span>
