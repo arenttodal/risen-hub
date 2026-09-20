@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/db';
 import { workItems } from '@/db/schema';
 import type { WorkItem } from '../types';
-import type { NewWorkItem, WorkItemPatch } from '../validate';
+import type { NewWorkItem, WorkItemPatch, WorkMoveInput } from '../validate';
 import { recordActivity } from './activity';
 
 /**
@@ -174,4 +174,62 @@ export async function listSubtasks(parentId: string) {
   const db = getDb();
   const rows = await db.select().from(workItems).where(eq(workItems.parentId, parentId));
   return rows.sort((a, b) => a.position - b.position);
+}
+
+/**
+ * Applies a batch of board moves.
+ *
+ * Only genuine changes are written, and only a status change records activity —
+ * a position is presentation, not a domain event, and logging every renumbered
+ * sibling would bury the change someone actually made.
+ *
+ * D1 has no interactive transaction here, so the writes are applied one by one.
+ * That is safe because each write is idempotent and the client re-reads the
+ * board afterwards: a partial apply leaves valid positions, never a lost card.
+ */
+export async function applyWorkMoves(moves: WorkMoveInput[]): Promise<{ applied: number }> {
+  if (moves.length === 0) return { applied: 0 };
+  const db = getDb();
+
+  const ids = moves.map(move => move.id);
+  const existing = await db.select().from(workItems).where(inArray(workItems.id, ids));
+  const before = new Map(existing.map(row => [row.id, row]));
+
+  const now = new Date().toISOString();
+  let applied = 0;
+
+  for (const move of moves) {
+    const row = before.get(move.id);
+    if (!row) continue;
+    const statusChanged = row.status !== move.status;
+    if (!statusChanged && row.position === move.position) continue;
+
+    await db
+      .update(workItems)
+      .set({
+        status: move.status,
+        position: move.position,
+        // Completion time follows the status rather than being trusted from input.
+        completedAt: move.status === 'done' ? (row.completedAt ?? now) : null,
+        updatedAt: now,
+      })
+      .where(eq(workItems.id, move.id));
+    applied += 1;
+
+    if (statusChanged) {
+      await recordActivity({
+        entityType: 'work_item',
+        entityId: move.id,
+        action: 'status_changed',
+        summary: `${row.title}: ${row.status} → ${move.status}`,
+        metadata: {
+          before: { status: row.status, position: row.position },
+          after: { status: move.status, position: move.position },
+          via: 'board',
+        },
+      });
+    }
+  }
+
+  return { applied };
 }

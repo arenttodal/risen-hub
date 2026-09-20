@@ -22,6 +22,7 @@ import {
 import { formatDate } from '@/lib/risen/format';
 import type { WorkItem } from '@/lib/risen/types';
 import { WorkInlineAdd } from './work-inline-add';
+import { WorkBoard } from './work-board';
 
 /**
  * The canonical master list.
@@ -116,6 +117,20 @@ export function WorkMasterList({
   const visible = useMemo(
     () => sortWorkItems(selectWorkItems(items, view, filters, context), sort),
     [items, view, filters, context, sort],
+  );
+  /**
+   * The board always includes finished work.
+   *
+   * Its Ferdig column is what "show completed" means here, and without this a
+   * card dropped into that column would disappear the moment it landed — the
+   * one gesture on the board that should feel most final instead looks like
+   * data loss.
+   */
+  const onBoard = useMemo(
+    () => (mode === 'board'
+      ? selectWorkItems(items, view, { ...filters, showCompleted: true }, context)
+      : []),
+    [mode, items, view, filters, context],
   );
   const groups = useMemo(
     () => groupWorkItems(visible, mode === 'board' ? 'status' : group, context, projectNames),
@@ -271,7 +286,7 @@ export function WorkMasterList({
         </p>
       )}
 
-      {visible.length === 0 ? (
+      {(mode === 'board' ? onBoard : visible).length === 0 ? (
         <div className="work-empty">
           <h3>{activeFilters.length > 0 ? 'Ingen saker matcher filtrene' : 'Ingen saker her ennå'}</h3>
           <p>
@@ -282,27 +297,7 @@ export function WorkMasterList({
           <WorkInlineAdd />
         </div>
       ) : mode === 'board' ? (
-        <div className="work-board">
-          {groups.map(bucket => (
-            <section className="board-column" key={bucket.key}>
-              <header>
-                <h3>{bucket.label}</h3>
-                <span className="count-tag tnum">{bucket.items.length}</span>
-              </header>
-              {bucket.items.map(item => (
-                <article className="board-card" key={item.id}>
-                  <strong>{item.title}</strong>
-                  <span>
-                    {item.projectId ? projectNames.get(item.projectId) : 'Uten prosjekt'}
-                    {item.dueDate ? ` · ${formatDate(item.dueDate)}` : ''}
-                  </span>
-                  {item.assignee && <small>{item.assignee}</small>}
-                </article>
-              ))}
-              <WorkInlineAdd inheritStatus={bucket.inheritStatus} label="Legg til" />
-            </section>
-          ))}
-        </div>
+        <WorkBoard items={onBoard} projectNames={projectNames} today={today} />
       ) : (
         <div className="work-groups">
           {groups.map(bucket => {
@@ -387,15 +382,18 @@ export function WorkMasterList({
 
       {/* A button rather than a checkbox: the state comes from the URL, which
           updates in a transition, and a controlled checkbox visibly reverts
-          before the new value lands. aria-pressed carries the state instead. */}
-      <button
-        type="button"
-        className="completed-toggle"
-        aria-pressed={showCompleted}
-        onClick={() => setParam('completed', showCompleted ? null : '1')}
-      >
-        {showCompleted ? 'Skjul fullførte saker' : 'Vis fullførte saker'}
-      </button>
+          before the new value lands. aria-pressed carries the state instead.
+          Hidden on the board, where the Ferdig column already shows them. */}
+      {mode !== 'board' && (
+        <button
+          type="button"
+          className="completed-toggle"
+          aria-pressed={showCompleted}
+          onClick={() => setParam('completed', showCompleted ? null : '1')}
+        >
+          {showCompleted ? 'Skjul fullførte saker' : 'Vis fullførte saker'}
+        </button>
+      )}
     </div>
   );
 }

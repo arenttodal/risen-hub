@@ -632,10 +632,32 @@
 .board-column>header{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .board-column h3{font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0}
 .board-column>header .count-tag{margin-left:auto}
-.board-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-bottom:8px;display:grid;gap:3px}
+.board-column.is-target{border-color:var(--accent);background:var(--accent-s)}
+.board-column-empty{margin:0 0 8px;padding:16px 0;text-align:center;font-size:12.5px;color:var(--faint);border:1px dashed #DDD9D1;border-radius:10px}
+.board-card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-bottom:8px;display:grid;gap:4px}
 .board-card strong{font-size:13.5px;font-weight:500}
-.board-card span{font-size:12.5px;color:var(--mute)}
+.board-card>span{font-size:12.5px;color:var(--mute)}
 .board-card small{font-size:12px;color:var(--faint)}
+.board-card-head{display:flex;align-items:flex-start;gap:7px}
+.board-card-head a{flex:1;font-size:13.5px;font-weight:500;color:var(--ink);min-width:0}
+.board-card-head a:hover{color:var(--accent)}
+.board-card-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.board-card-foot small{margin-left:auto}
+/* The handle is the keyboard entry point, so it is always in the tab order and
+   never hidden behind a hover. It only gets quieter when nothing is happening. */
+.card-grip{flex:none;border:0;background:transparent;color:var(--faint);padding:2px 1px;border-radius:999px;margin-top:1px;cursor:grab}
+.card-grip:hover{color:var(--ink2)}
+.card-grip[aria-pressed="true"]{color:var(--accent);cursor:grabbing}
+.board-card.is-grabbed{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-s);cursor:grabbing}
+.board-card.is-over{border-top:2px solid var(--accent)}
+.board-help{margin:0 0 12px;font-size:12.5px;color:var(--mute)}
+/* Visible only while a card is held. On a touch screen these buttons are the
+   whole move interaction, so they are sized to be tapped, not just clicked. */
+.card-move{display:flex;align-items:center;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)}
+.card-move button{border:1px solid var(--line);background:var(--card);color:var(--ink2);border-radius:999px;width:30px;height:30px;display:grid;place-items:center;padding:0}
+.card-move button:not(:disabled):hover{border-color:var(--accent);color:var(--accent)}
+.card-move button:disabled{color:var(--faint);opacity:.55}
+.card-move .card-move-done{width:auto;height:30px;padding:0 15px;font-size:12.5px;font-weight:600;white-space:nowrap;background:var(--accent);border-color:var(--accent);color:#fff;margin-left:auto}
 .completed-toggle{display:inline-flex;align-items:center;gap:9px;margin-top:22px;font-size:13px;color:var(--mute);border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 15px;font-weight:500}
 .completed-toggle:hover{color:var(--ink2)}
 .completed-toggle[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}

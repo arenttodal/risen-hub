@@ -329,3 +329,53 @@ export function parseShoppingItemPatch(input: unknown): Result<ShoppingItemPatch
   if (Object.keys(patch).length === 0) errors.push('Ingen felter å oppdatere');
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: patch };
 }
+
+export interface WorkMoveInput {
+  id: string;
+  status: (typeof WORK_STATUSES)[number];
+  position: number;
+}
+
+/**
+ * A batch of board moves.
+ *
+ * The client plans the whole batch, but nothing here trusts it: every id,
+ * status and position is re-validated, and a batch with one bad entry is
+ * rejected whole rather than applied in part. A half-applied reorder is worse
+ * than a refused one.
+ */
+export function parseWorkMoves(input: unknown): Result<WorkMoveInput[]> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const raw = Array.isArray(body.moves) ? body.moves : null;
+  if (!raw) {
+    errors.push('Ingen flyttinger å utføre');
+    return { ok: false, errors };
+  }
+  if (raw.length > 200) {
+    errors.push('For mange flyttinger i én forespørsel');
+    return { ok: false, errors };
+  }
+
+  const seen = new Set<string>();
+  const moves: WorkMoveInput[] = [];
+  for (const entry of raw) {
+    const move = asObject(entry, errors);
+    const id = text(move.id, 'Sak', 64, errors);
+    if (id === null) continue;
+    if (seen.has(id)) {
+      errors.push('Samme sak flyttes to ganger i samme forespørsel');
+      continue;
+    }
+    seen.add(id);
+    const position = wholeNumber(move.position, 'Posisjon', 0, 100000, errors);
+    moves.push({
+      id,
+      status: oneOf(move.status, 'Status', WORK_STATUSES, errors, 'inbox'),
+      position: position ?? 0,
+    });
+  }
+
+  if (moves.length === 0) errors.push('Ingen flyttinger å utføre');
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: moves };
+}
