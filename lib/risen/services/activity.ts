@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { getDb } from '@/db';
+import { getDb, tryGetDb } from '@/db';
 import { activityLog } from '@/db/schema';
 import type { ActorRole } from '../types';
 
@@ -59,4 +59,22 @@ export async function listActivityFor(entityType: string, entityId: string, limi
     .filter(row => row.entityType === entityType)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, limit);
+}
+
+/**
+ * The most recent entries across everything, newest first.
+ *
+ * Returns an empty list rather than throwing when the database is unreachable:
+ * the overview is a page of headlines, and a missing recent-activity panel is
+ * far better than a page that will not render.
+ */
+export async function listRecentActivity(limit = 6) {
+  const db = tryGetDb();
+  if (!db) return [];
+  try {
+    const rows = await db.select().from(activityLog);
+    return rows.sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit);
+  } catch {
+    return [];
+  }
 }

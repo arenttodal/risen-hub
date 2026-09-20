@@ -762,3 +762,27 @@
   .shopping-add input[name="quantity"],.shopping-add input[name="unit"],.shopping-add input[name="estimatedUnitPrice"]{flex:1 1 76px}
   .shopping-add button{flex:1 1 100%}
 }
+
+/* ---------- Overview ---------- */
+/* The focus card takes a tint from what it is reporting, so the severity is
+   legible before the sentence is read. Never colour alone: the headline always
+   says what is wrong, and the tints are backgrounds rather than text. */
+.focus-card.focus-overdue, .focus-card.focus-blocked { border-color: #F5C9C2; background: linear-gradient(var(--neg-bg), var(--card) 60%); }
+.focus-card.focus-deadline, .focus-card.focus-unverified { border-color: var(--warn-line); background: linear-gradient(var(--warn-bg), var(--card) 60%); }
+.focus-card.focus-clear { border-color: #CFE3D5; background: linear-gradient(var(--pos-bg), var(--card) 60%); }
+.focus-card.focus-overdue h2, .focus-card.focus-blocked h2 { font-size: clamp(26px, 4vw, 34px); }
+.focus-card.focus-deadline h2, .focus-card.focus-unverified h2 { font-size: clamp(26px, 4vw, 34px); }
+
+.metric-row article > strong { font-variant-numeric: tabular-nums; }
+.panel-foot-note { display: flex; align-items: flex-start; gap: 7px; }
+.panel-foot-note svg { flex: none; margin-top: 2px; color: var(--warn-ink); }
+
+.clarify-row { display: flex; align-items: baseline; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line2); }
+.clarify-row a { flex: 1; font-size: 13.5px; font-weight: 500; color: var(--ink); min-width: 0; }
+.clarify-row a:hover { color: var(--accent); }
+.reason-tag { flex: none; font-size: 11.5px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-ink); }
+.clarify-panel .activity-list { margin-top: 6px; }
+
+.hub-panel > .activity-list li:first-child { border-top: 1px solid var(--line2); }
+.activity-list span { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.activity-list svg { flex: none; color: var(--faint); }

@@ -14,6 +14,24 @@ import { recordActivity } from './activity';
  * deliberately not implemented yet.
  */
 
+/**
+ * The log is read by people, so it is written in their words.
+ *
+ * An entry that says `planned → inbox` makes the reader translate the database
+ * back into Norwegian before they can tell what happened, which is exactly the
+ * cognitive load CLAUDE.md rule 6 asks us to remove. The status codes stay in
+ * `metadata` for anything that needs to read them back.
+ */
+const statusLabels: Record<WorkItem['status'], string> = {
+  inbox: 'Innboks',
+  planned: 'Planlagt',
+  ready: 'Klar',
+  in_progress: 'Pågår',
+  blocked: 'Blokkert',
+  done: 'Ferdig',
+  cancelled: 'Avlyst',
+};
+
 const typeLabels: Record<WorkItem['type'], string> = {
   task: 'Oppgave',
   repair: 'Reparasjon',
@@ -95,7 +113,7 @@ export async function updateWorkItem(id: string, patch: WorkItemPatch): Promise<
     entityId: id,
     action: statusChanged ? 'status_changed' : 'updated',
     summary: statusChanged
-      ? `${before.title}: ${before.status} → ${patch.status}`
+      ? `${before.title}: ${statusLabels[before.status as WorkItem['status']]} → ${statusLabels[patch.status!]}`
       : `${before.title} oppdatert`,
     // The previous values are kept so the change can be read, and undone.
     metadata: {
@@ -221,7 +239,7 @@ export async function applyWorkMoves(moves: WorkMoveInput[]): Promise<{ applied:
         entityType: 'work_item',
         entityId: move.id,
         action: 'status_changed',
-        summary: `${row.title}: ${row.status} → ${move.status}`,
+        summary: `${row.title}: ${statusLabels[row.status as WorkItem['status']]} → ${statusLabels[move.status]}`,
         metadata: {
           before: { status: row.status, position: row.position },
           after: { status: move.status, position: move.position },
