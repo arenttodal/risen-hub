@@ -1,6 +1,8 @@
 /**
  * Bootstraps the LOCAL Miniflare D1 database used by `npm run dev`.
  *
+ * Runs standalone — it does not need `npm run build` first.
+ *
  * Applies every checked-in Drizzle migration in journal order, then inserts the
  * seed dataset from `data/risen.ts` so there is only ever one definition of the
  * seed. Safe to re-run: migrations that are already applied are skipped via the
@@ -14,9 +16,24 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const CONFIG = 'dist/server/wrangler.json';
 const PERSIST = '.wrangler/state';
 const scratch = mkdtempSync(join(tmpdir(), 'risen-d1-'));
+
+// A throwaway Wrangler config for the CLI. The build no longer emits a D1
+// binding unless CLOUDFLARE_D1_DATABASE_ID is set (a placeholder id fails a
+// real deploy), so this script cannot rely on dist/server/wrangler.json. The
+// placeholder id is what Miniflare keys local state by, so it matches `npm run dev`.
+const CONFIG = join(scratch, 'wrangler.json');
+writeFileSync(CONFIG, JSON.stringify({
+  name: 'risen-hub-d1-local',
+  compatibility_date: '2026-05-15',
+  compatibility_flags: ['nodejs_compat'],
+  d1_databases: [{
+    binding: 'DB',
+    database_name: process.env.CLOUDFLARE_D1_DATABASE_NAME?.trim() || 'site-creator-d1',
+    database_id: '00000000-0000-4000-8000-000000000000',
+  }],
+}, null, 2), 'utf8');
 
 function run(args) {
   return execFileSync('npx', ['wrangler', 'd1', 'execute', 'DB', '--local',
@@ -46,13 +63,6 @@ const insert = (table, columns, rows) =>
   rows
     .map(row => `INSERT OR IGNORE INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(c => quote(row[c])).join(', ')});`)
     .join('\n');
-
-try {
-  readFileSync(CONFIG);
-} catch {
-  console.error(`Missing ${CONFIG}. Run \`npm run build\` first — it generates the Wrangler config this script points at.`);
-  process.exit(1);
-}
 
 // 1. Migrations, in the order Drizzle recorded them.
 const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8'));
