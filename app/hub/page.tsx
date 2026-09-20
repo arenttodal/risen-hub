@@ -5,7 +5,7 @@ import { listFundingSchemes, listProjects, listWorkItems } from '@/lib/risen/rep
 import { listRecentActivity } from '@/lib/risen/services/activity';
 import { chooseFocus, needsClarification, overviewMetrics, projectsInMotion, upcomingDeadlines } from '@/lib/risen/overview';
 import { isOpenWork, isVerified } from '@/lib/risen/types';
-import { formatDate } from '@/lib/risen/format';
+import { formatDate, readableSummary } from '@/lib/risen/format';
 import { JosefaTrigger } from '@/components/risen/josefa-context';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
 
@@ -225,7 +225,7 @@ export default async function OverviewPage() {
             {activity.map(entry => (
               <li key={entry.id}>
                 <span>
-                  <CircleCheck size={13} /> {entry.summary}
+                  <CircleCheck size={13} /> {readableSummary(entry.summary)}
                 </span>
                 <time className="tnum">{formatDate(entry.createdAt)}</time>
               </li>

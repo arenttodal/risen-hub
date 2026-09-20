@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Check, Loader2, X } from 'lucide-react';
-import { formatDate } from '@/lib/risen/format';
+import { formatDate, readableSummary } from '@/lib/risen/format';
 import { priorityLabels, statusLabels, typeLabels } from '@/lib/risen/work-views';
 import { subtaskProgress, type WorkItem } from '@/lib/risen/types';
 import type { WorkListProject } from './work-master-list';
@@ -367,7 +367,7 @@ export function WorkDetail({ projects, places }: { projects: WorkListProject[]; 
                   <ul className="activity-list">
                     {data.activity.map(entry => (
                       <li key={entry.id}>
-                        <span>{entry.summary}</span>
+                        <span>{readableSummary(entry.summary)}</span>
                         <time>{formatDate(entry.createdAt.slice(0, 10))}</time>
                       </li>
                     ))}

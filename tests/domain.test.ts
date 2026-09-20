@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { readableSummary } from '../lib/risen/format.ts';
 import {
   byPriority,
   fundedShare,
@@ -114,5 +115,36 @@ describe('subtaskProgress', () => {
 
   it('carries a text label, so progress is not conveyed by a bar alone', () => {
     assert.match(subtaskProgress([{ status: 'done' }]).label, /1 av 1/);
+  });
+});
+
+describe('readableSummary', () => {
+  it('reads a stored status transition back in Norwegian', () => {
+    assert.equal(
+      readableSummary('Reparer kjøkkendør: planned → inbox'),
+      'Reparer kjøkkendør: Planlagt → Innboks',
+    );
+  });
+
+  it('knows the retired `doing` status older rows still carry', () => {
+    assert.equal(readableSummary('X: doing → done'), 'X: Pågår → Ferdig');
+  });
+
+  it('leaves a summary that is already Norwegian alone', () => {
+    const already = 'Reparer kjøkkendør: Planlagt → Innboks';
+    assert.equal(readableSummary(already), already);
+  });
+
+  it('leaves an ordinary sentence alone', () => {
+    assert.equal(readableSummary('Innkjøpsliste opprettet: Materialer'), 'Innkjøpsliste opprettet: Materialer');
+  });
+
+  it('does not rewrite a pair it only half recognises', () => {
+    assert.equal(readableSummary('X: planned → forever'), 'X: planned → forever');
+  });
+
+  it('only touches the arrow pair at the end, so a task named after a status keeps its name', () => {
+    assert.equal(readableSummary('done'), 'done');
+    assert.equal(readableSummary('Rydde done-mappa oppdatert'), 'Rydde done-mappa oppdatert');
   });
 });

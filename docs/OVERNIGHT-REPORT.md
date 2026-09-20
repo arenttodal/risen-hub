@@ -159,11 +159,37 @@ lot of pasting — the terminal route is much less tedious if you have it.
 
 Then redeploy. Everything is safe to re-run.
 
-## Not done
+## Phase 6 — quality pass
 
-- **Phase 6 of the work system (quality pass).** Phases 1–5 each carry their
-  own tests, empty states and browser verification, but no separate sweep for
-  the module as a whole has been made.
+Every route was driven in a real browser at 1400px and 390px, twenty
+combinations in all. All twenty return 200, throw no JavaScript, request
+nothing that 404s and produce no horizontal page scroll.
+
+Checked and passing:
+
+- **The public route is intact.** RSVP opens, saves, rejects a duplicate with
+  *"You already have a preview RSVP for this weekend"*, and closes on Escape.
+  The project dialog still opens.
+- **Client navigation works.** Clicking a sidebar link navigates rather than
+  doing nothing — the failure that took production down once, so it is worth
+  re-checking after every dependency change.
+- **Keyboard.** 29 tab stops on `/hub/work`, none of them invisible or
+  zero-sized. The quick-capture sheet and the task detail panel both open from
+  the keyboard, close on Escape and restore focus to what opened them.
+- **Mutations are reversible.** There is exactly one `DELETE` endpoint and it
+  cancels rather than deletes. There is exactly one hard delete in the
+  services, and it removes a row the same function created moments earlier when
+  a subtask would have formed a cycle; it can never touch pre-existing data.
+
+One defect found and fixed: activity entries written before the log learned
+Norwegian still read `done → in_progress`, making the reader translate the
+database in their head. `readableSummary` now reads them back properly at
+render time. It is deliberately narrow — only the arrow pair at the very end of
+a summary, and only when both sides are known status codes — so a task
+legitimately named "done" keeps its name. The stored rows are untouched,
+because the log is history rather than a view.
+
+## Not done
 - **Projects and Funding rebuild** is partly done: the funding half now has
   real data, real fields and an honest banner. Budgets, applications, document
   progress and publishing controls are not built.

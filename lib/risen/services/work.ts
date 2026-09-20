@@ -172,6 +172,10 @@ export async function createSubtask(parentId: string, input: NewWorkItem): Promi
   });
 
   if (await wouldCreateCycle(id, parentId)) {
+    // The only hard delete in the codebase, and it removes the row this
+    // function created a moment ago rather than anything that existed before.
+    // Leaving it would strand a titled task with no parent and no project view
+    // it appears in, which is worse than never having created it.
     await db.delete(workItems).where(eq(workItems.id, id));
     return { ok: false, reason: 'cycle' };
   }
