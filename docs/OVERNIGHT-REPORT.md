@@ -1,7 +1,7 @@
 # Overnight build report — 20 September 2026
 
-Branch `claude/confident-brown-jhf5hu`. Seven commits, `908c11f` through
-`ac44857`. 183 tests across 42 suites pass, `npm run build`, `npm run lint` and
+Branch `claude/confident-brown-jhf5hu`. Eleven commits, `908c11f` through
+`4fe2e81`. 189 tests across 43 suites pass, `npm run build`, `npm run lint` and
 `npm run typecheck` are clean.
 
 **Nothing was deployed and no destructive database operation was run.** Every
@@ -161,9 +161,10 @@ Then redeploy. Everything is safe to re-run.
 
 ## Phase 6 — quality pass
 
-Every route was driven in a real browser at 1400px and 390px, twenty
-combinations in all. All twenty return 200, throw no JavaScript, request
-nothing that 404s and produce no horizontal page scroll.
+Every route was driven in a real browser at 1400px and 390px, twenty-four
+combinations in all including both detail routes. All twenty-four return 200,
+throw no JavaScript, request nothing that 404s and produce no horizontal page
+scroll. An unknown scheme id returns a proper 404 rather than throwing.
 
 Checked and passing:
 
@@ -189,13 +190,40 @@ a summary, and only when both sides are known status codes — so a task
 legitimately named "done" keeps its name. The stored rows are untouched,
 because the log is history rather than a view.
 
+## Funding, read end to end (`757c690`, `4fe2e81`)
+
+Everything the import wrote is now visible.
+
+**The requirement catalogue**, sorted by how many schemes ask for each one —
+which turns a flat list into an order of work. Prosjektbudsjett is wanted by 9
+of the 16 schemes, Finansieringsplan by 8, Fotodokumentasjon by 7. Make those
+three and most applications are unblocked. Twenty-two of the 34 are wanted by
+exactly one scheme and would have buried that finding, so they sit behind a
+disclosure.
+
+**A scheme detail page.** Clicking a scheme opens the funder's terms in their
+own words, the documents the application must carry, the angles it argues
+through and the application template — the last imported table nothing was
+reading. It is the old portal's søknadsverksted, rebuilt on records rather than
+on `localStorage`.
+
+Three deliberate refusals on that page:
+
+- The terms tiles drop the oversized-number treatment. *"Normalt ca. 30 %"* is a
+  hedge, and a hedge set in 34px reads as a promise.
+- Template placeholders stay exactly as written, and the page says the bracketed
+  fields are holes to fill rather than guesses to accept.
+- The requirement list states that whether a document exists is not recorded
+  yet, so an empty list cannot be mistaken for "nothing missing".
+
 ## Not done
-- **Projects and Funding rebuild** is partly done: the funding half now has
-  real data, real fields and an honest banner. Budgets, applications, document
-  progress and publishing controls are not built.
-- **Document requirements are imported but not yet shown.** The 34 rows and
-  their 79 links exist in the database with nothing reading them. That is the
-  obvious next piece of UI.
+
+- **Project budgets, applications and publishing controls.** The funding half
+  now has real data, real fields, honest banners and a detail page. Budget
+  lines, application drafts and the public publishing controls are not built.
+- **Document progress is not capturable.** The catalogue is readable; there is
+  no way yet to record that the farm actually has a given document. That is the
+  obvious next piece.
 - **Angles are not linked to projects.** The archive does not contain that
   link, and guessing it would be inventing a claim. It needs a person.
 
