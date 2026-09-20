@@ -1,8 +1,8 @@
 import {
   CalendarDays,
-  CircleDollarSign,
-  ClipboardList,
-  FolderKanban,
+  Coins,
+  FileText,
+  Hammer,
   Home,
   Landmark,
   Mountain,
@@ -17,24 +17,26 @@ export interface HubNavItem {
 }
 
 /**
- * Single source of truth for the internal navigation. Route segments stay in
- * English (see `docs/PLATFORM-SPEC.md` section 8); the interface copy is
- * Norwegian.
+ * Single source of truth for the internal navigation.
+ *
+ * Route segments stay English (PLATFORM-SPEC.md section 8); the labels are
+ * Norwegian, which is the internal product language. The label set is fixed by
+ * CLAUDE-HANDOFF.md section 2.
  */
 export const hubNav: HubNavItem[] = [
-  { href: '/hub', label: 'Overview', icon: Home },
-  { href: '/hub/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/hub/work', label: 'Work', icon: ClipboardList },
-  { href: '/hub/funding', label: 'Funding', icon: CircleDollarSign },
-  { href: '/hub/farm', label: 'Farm', icon: Landmark },
-  { href: '/hub/events', label: 'Events', icon: CalendarDays },
-  { href: '/hub/community', label: 'Community', icon: Users },
-  { href: '/hub/public', label: 'Public', icon: Mountain },
+  { href: '/hub', label: 'Oversikt', icon: Home },
+  { href: '/hub/projects', label: 'Prosjekter', icon: FileText },
+  { href: '/hub/work', label: 'Arbeid', icon: Hammer },
+  { href: '/hub/funding', label: 'Finansiering', icon: Coins },
+  { href: '/hub/farm', label: 'Gården', icon: Landmark },
+  { href: '/hub/events', label: 'Arrangement', icon: CalendarDays },
+  { href: '/hub/community', label: 'Fellesskap', icon: Users },
+  { href: '/hub/public', label: 'Offentlig', icon: Mountain },
 ];
 
 /**
  * Longest matching prefix wins, so a detail route such as
- * `/hub/projects/laven` keeps `Projects` highlighted instead of `Overview`.
+ * `/hub/projects/barn` keeps `Prosjekter` highlighted.
  */
 export function activeHubItem(pathname: string): HubNavItem {
   let match = hubNav[0];

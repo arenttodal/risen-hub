@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Hammer } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { fundedShare, type Project } from '@/lib/risen/types';
 
 export const money = (value: number) => `${new Intl.NumberFormat('nb-NO').format(value)} kr`;
@@ -9,6 +9,13 @@ export const statusLabels: Record<Project['status'], string> = {
   planning: 'Planlegging',
   paused: 'På pause',
   complete: 'Ferdig',
+};
+
+export const priorityLabels: Record<'urgent' | 'high' | 'normal' | 'low', string> = {
+  urgent: 'Haster',
+  high: 'Høy',
+  normal: 'Normal',
+  low: 'Lav',
 };
 
 export const visibilityLabels: Record<Project['visibility'], string> = {
@@ -22,12 +29,9 @@ export function ProjectCard({ project }: { project: Project }) {
   return (
     <article className="project-card">
       <div className="project-card-head">
-        <div className="project-icon">
-          <Hammer size={17} />
-        </div>
         <div>
           <h3>
-            <Link href={`/hub/projects/${project.slug}`}>{project.name}</Link>
+            <Link href={`/hub/projects/${project.id}`}>{project.name}</Link>
           </h3>
           <span>{project.category}</span>
         </div>
@@ -36,7 +40,7 @@ export function ProjectCard({ project }: { project: Project }) {
 
       {project.nextAction && (
         <p className="project-next">
-          <span className="kicker">NESTE STEG</span>
+          <span className="kicker">Neste steg</span>
           {project.nextAction}
         </p>
       )}
@@ -67,7 +71,7 @@ export function ProjectCard({ project }: { project: Project }) {
         <span className={`visibility ${project.visibility}`}>
           {visibilityLabels[project.visibility]}
         </span>
-        <Link className="card-link" href={`/hub/projects/${project.slug}`}>
+        <Link className="card-link" href={`/hub/projects/${project.id}`}>
           Åpne <ArrowRight size={15} />
         </Link>
       </footer>

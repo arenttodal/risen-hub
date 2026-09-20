@@ -16,7 +16,6 @@ documentation, events, community and public storytelling.
 
 ```bash
 npm install
-npm run build     # also generates the Wrangler config db:local needs
 npm run db:local  # apply migrations and seed the local D1 database
 npm run dev
 ```
@@ -25,6 +24,10 @@ Open `http://localhost:3000/hub` for the internal platform.
 
 Without `npm run db:local` the app still runs: reads fall back to the seed
 dataset and the interface says so on screen.
+
+Deploys bind D1 only when `CLOUDFLARE_D1_DATABASE_ID` is set to a real database
+id; otherwise the build skips the binding rather than failing. See
+`docs/decisions/0001-d1-persistence.md`.
 
 ## Checks
 
@@ -43,5 +46,5 @@ npm run build
 
 All dates, budgets, progress and funding numbers in `data/risen.ts` are
 illustrative seed data. Do not expose API keys in client code. Read
-`CLAUDE.md`, `docs/CLAUDE-HANDOFF.md` and `docs/PLATFORM-SPEC.md` before
+`CLAUDE.md`, `CLAUDE-HANDOFF.md` and `PLATFORM-SPEC.md` before
 extending the product.

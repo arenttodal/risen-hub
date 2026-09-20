@@ -155,7 +155,7 @@ export const deadlines = [
   { date: '1. mars 2027', title: 'Kulturrom / Gjenklang', project: 'Scene og akustikk', state: 'upcoming' },
 ];
 
-/** Idea bank entries. Classification follows docs/PLATFORM-SPEC.md section 6. */
+/** Idea bank entries. Classification follows PLATFORM-SPEC.md section 6. */
 export const fundingAngles = [
   { id: 'FA-014', title: 'Separere varme arbeider fra historisk låve', strength: 'Sterkt støtteargument', projects: ['Låven', 'Drift og verksted'], missing: 'Bilder og faglig risikovurdering' },
   { id: 'FA-015', title: 'Aktiv bruk som vern av gårdsmiljøet', strength: 'Kjerneargument', projects: ['Låven', 'Steinmuren'], missing: 'Historikk og bruksplan' },

@@ -6,7 +6,7 @@
 
 ## Context
 
-`docs/PLATFORM-SPEC.md` section 4 leaves the persistence choice open between
+`PLATFORM-SPEC.md` section 4 leaves the persistence choice open between
 Cloudflare D1 and Postgres/Supabase, and instructs us not to pick Supabase
 merely for login.
 
@@ -50,21 +50,45 @@ returned 503 on every request and the page permanently displayed
   presenting them as current without those. Until then they stay as clearly
   labelled illustrative copy.
 
-## Open question — applying migrations in production
+## Binding D1 on deploy — resolved the hard way
 
-`npm run db:local` applies migrations and the seed to the **local** Miniflare
-database only. How migrations reach the deployed D1 instance is not resolved:
-the hosting control plane injects the real `database_id`, and this session had
-no way to verify whether it also runs migrations.
+Setting `"d1": "DB"` alone broke the production deploy. `vite.config.ts` wrote
+the placeholder `database_id` `00000000-0000-4000-8000-000000000000` into the
+built `dist/server/wrangler.json`, and Cloudflare rejected the whole deploy:
 
-Before any real data is entered, confirm one of:
+```
+D1 binding 'DB' references database '00000000-0000-4000-8000-000000000000'
+which was not found. [code: 10181]
+```
 
-- the control plane applies `drizzle/*.sql` on deploy, or
-- a deploy step runs `wrangler d1 migrations apply` against the remote database
+Miniflare accepts any database id and keys local state by it, so the
+placeholder is fine for `npm run dev`. Cloudflare requires an id that exists in
+the account. The placeholder must therefore never reach a built config.
 
-Until that is confirmed, a deployed instance will fall back to the seed dataset
-and show the "Seed-data" notice, which is the intended safe failure rather than
-a silent one.
+`vite.config.ts` now emits the D1 binding only when it has a real id:
+
+- `CLOUDFLARE_D1_DATABASE_ID` set (a Cloudflare build variable) → the binding
+  is emitted with that id
+- not set, `vite dev` → the placeholder, because local Miniflare is happy with it
+- not set, `vite build` → **no binding**, plus a build warning
+
+A deployed worker without the binding falls back to the seed dataset and says
+so on screen, which is a visible, safe failure. A deploy that fails outright is
+not.
+
+### To turn D1 on in production
+
+1. Create the database: `npx wrangler d1 create risen-hub` (or via the
+   dashboard) and copy its id.
+2. Add `CLOUDFLARE_D1_DATABASE_ID` as a build variable on the Worker, and
+   `CLOUDFLARE_D1_DATABASE_NAME` if the name is not `site-creator-d1`.
+3. Apply the migrations in `drizzle/` to the remote database:
+   `npx wrangler d1 migrations apply <name> --remote`, or execute each
+   `drizzle/*.sql` in journal order with `wrangler d1 execute --remote --file`.
+4. Redeploy and confirm the seed notice is gone from `/hub`.
+
+Step 3 is still manual. Automating it in the deploy command is the next
+decision to make, and it must happen before real data is entered.
 
 ## Alternatives considered
 
