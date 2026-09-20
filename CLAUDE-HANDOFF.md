@@ -1,6 +1,6 @@
 # Risen Hub — Claude Code handoff and full build specification
 
-Last updated: 20 September 2026
+Last updated: 20 September 2026 (revised after the routing, schema and visual-system session)
 
 ## 0. Mission
 
@@ -24,18 +24,38 @@ Repository facts:
 - Vinext + React 19 + TypeScript + Vite.
 - Cloudflare Worker deployment is working.
 - D1 binding is named `DB`.
-- Existing migration `drizzle/0000_nebulous_ricochet.sql` currently creates only the RSVP table.
-- `/` is the public prototype.
-- `/hub` is the internal shell and overview.
-- Sidebar module buttons currently switch local component state; they are not routes.
-- Overview data comes from `data/risen.ts` and is illustrative seed data.
-- Projects, Work, Funding, Farm, Events, Community and Public module pages are placeholders.
-- Josefa is currently a client-side mock response; no model endpoint exists.
-- Search and most overview actions are visually present but inert.
-- Authentication is intentionally absent. Do not store private or sensitive production data until authorization exists.
-- `npm run build` passes after the Josefa/editorial design pass.
-- Targeted lint for `app/layout.tsx`, `components/risen/assistant.tsx` and `components/risen/hub-shell.tsx` passes.
-- Full-repository `npm run lint` currently fails on pre-existing generated UI accessibility rules plus legacy `app/page.tsx` and RSVP typing. Treat these as a dedicated cleanup ticket; do not disable the rules globally.
+- Migrations live in `drizzle/`. `0000` creates the RSVP table; `0001` adds
+  `places`, `projects`, `milestones`, `work_items` and `activity_log`.
+- `/` is the public prototype and still renders hard-coded projects.
+- `/hub` and every module are real routes under a shared layout
+  (`app/hub/layout.tsx`). Sidebar navigation no longer uses local state.
+- `/hub/projects` and `/hub/projects/[id]` read real records.
+- Work, Funding, Farm, Events, Community and Public are routed with deliberate
+  empty states that name the records they will own.
+- All reads go through `lib/risen/repository.ts`. With no D1 binding it falls
+  back to the seed in `data/risen.ts` and labels it on screen.
+- Josefa is a client-side placeholder; no model endpoint exists. She states
+  plainly that nothing was retrieved rather than implying a real answer.
+- Search and some overview actions are still inert.
+- Authentication is intentionally absent.
+- `npm run build`, `npm run lint`, `npm run typecheck` and `npm test` all pass.
+- `npm run db:local` migrates and seeds the local Miniflare D1 standalone.
+
+### Deploy: D1 needs a real database id
+
+Setting `.openai/hosting.json` `"d1": "DB"` on its own **breaks the deploy**.
+`vite.config.ts` used to write the placeholder id
+`00000000-0000-4000-8000-000000000000` into the built wrangler config, and
+Cloudflare rejects it with error 10181.
+
+`vite.config.ts` now emits the binding only when it has a real id:
+`CLOUDFLARE_D1_DATABASE_ID` set as a build variable. Unset, `vite dev` uses the
+placeholder (Miniflare accepts any id) and `vite build` emits no binding at all
+plus a warning. A deployed worker without the binding falls back to the seed and
+says so, which is a visible failure rather than a failed deploy.
+
+To turn D1 on in production, see `docs/decisions/0001-d1-persistence.md`.
+Migrations still have to be applied to the remote database by hand.
 
 At the beginning of every session:
 
@@ -409,18 +429,63 @@ Never combine schema migration, broad visual rewrite and unrelated feature work 
 
 ## 11. Immediate next session checklist
 
-Continue in this exact order:
+Items 1-9 below were worked in order. Status as of this revision:
 
-1. Review current uncommitted visual/Josefa diff and preserve the Cloudflare `vite.config.ts` fix.
-2. Run formatter, lint and build; resolve only errors caused by this branch.
-3. Verify `/` and `/hub` visually at desktop and mobile widths.
-4. Finish applying visual tokens to any remaining public-page Arial/Georgia literals.
-5. Replace local sidebar state with real `/hub/*` routes without changing overview content.
-6. Add shared hub layout and a useful empty state for every module.
-7. Design and migrate the core tables: places, projects, work_items, milestones, activity_log.
-8. Seed the four current demo projects and tasks.
-9. Implement `/hub/projects` and `/hub/projects/[id]` before starting Funding.
-10. Update this handoff document as decisions change.
+1. ~~Review uncommitted visual/Josefa diff; preserve the Cloudflare
+   `vite.config.ts` fix.~~ **No such diff existed** — the working tree was
+   clean and `git log --all` held only the two upload commits. The
+   `vite.config.ts` change described in section 1 was also not in the
+   repository; it still imported `.openai/hosting.json`. That import is now
+   guarded rather than removed (see the deploy note in section 1).
+2. ~~Run formatter, lint and build.~~ Done. `npm run lint` used to scan
+   `node_modules`; `.oxlintrc.json` scopes it now.
+3. ~~Verify `/` and `/hub` at desktop and mobile widths.~~ Done, by screenshot
+   at 1440px and 390px, checking for console errors and horizontal overflow.
+4. ~~Apply visual tokens to remaining public-page Arial/Georgia literals.~~ Done.
+5. ~~Replace sidebar state with real `/hub/*` routes.~~ Done.
+6. ~~Shared hub layout and a useful empty state for every module.~~ Done.
+7. ~~Migrate core tables.~~ Done as `drizzle/0001`. Note: the table is named
+   `milestones`, matching this checklist, not `project_milestones` as section 5
+   writes it. Reconcile the two before building on it.
+8. ~~Seed the demo projects and tasks.~~ Done, via `npm run db:local`.
+9. ~~Implement `/hub/projects` and `/hub/projects/[id]`.~~ Done, read-only.
+10. Keep updating this document.
+
+### Next, in order
+
+1. **Write path for Projects and Work.** Everything is read-only. This blocks
+   most of Phase B and all of Phase C. Mutations must write `activity_log` and
+   be reversible or confirmed.
+2. **Universal `Ny sak` capture** (section 8), available from every hub route.
+3. **Work inbox and dugnad planner** (Phase C). The records exist; the views do not.
+4. **Project detail tabs** (Oversikt, Arbeid, Finansiering, Budsjett, Filer,
+   Offentlig). The detail page uses sections today because most tabs would be
+   empty; add them as nested routes once there is content.
+5. **Schema gap against section 5.** Still missing: `users`, `memberships`,
+   `assets`, `documents`, `document_links`, `budget_lines`, `funding_schemes`,
+   `applications`, `application_sections`, `application_requirements`,
+   `funding_angles`, `volunteer_entries`, `events`, `event_shifts`,
+   `shift_signups`, `proposals`, `votes`, `decisions`, `publications`,
+   `public_updates`, `campaigns`, and the three `assistant_*` tables. Also:
+   `projects` currently carries `budget_nok`/`funded_nok`, which section 5 puts
+   in `budget_lines`, and `places` uses `kind` where section 5 says `type` and
+   has no `parent_id`. Add these additively in `0002`+; never edit `0001`.
+6. **Funding module.** Add `source_url`, `verified_at` and status before
+   importing anything. The four deadlines in `data/risen.ts` have no source and
+   are labelled unverified in the interface; the 10/15 September 2026 deadlines
+   must be marked passed.
+7. **Public projection.** `/` still renders hard-coded projects; replace with a
+   published-fields-only query (Phase G).
+8. **Josefa's server endpoint**, only after the read services are stable.
+9. **Authentication**, last.
+
+### Open questions for a human
+
+- **Remote migrations.** Applying `drizzle/*.sql` to the deployed D1 is manual.
+  Automate it in the deploy command before real data is entered.
+- **`next.config.ts` and `next-env.d.ts`** are vestigial; the build is `vinext`.
+- **Public page language.** The public prototype is still English while the hub
+  is Norwegian. Section 2 covers the internal UI only, so this is undecided.
 
 ## 12. Do not do yet
 
