@@ -22,7 +22,7 @@ Risen is one platform, not a bundle of separate apps. A project such as `Låven`
 1. Shared domain schema and persistence.
 2. Projects and Work workflows.
 3. Funding hub and document requirements.
-4. Assistant retrieval/actions with confirmations.
+4. Josefa retrieval/actions with confirmations.
 5. Public publishing controls.
 6. Authentication and permissions.
 
@@ -37,3 +37,4 @@ Risen is one platform, not a bundle of separate apps. A project such as `Låven`
 - `npm run build` passes
 
 See `docs/PLATFORM-SPEC.md` for the complete plan.
+See `docs/CLAUDE-HANDOFF.md` for the current design system, implementation order, acceptance criteria and seamless takeover brief.
