@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788694672210,
+      "tag": "0000_nebulous_ricochet",
+      "breakpoints": true
+    }
+  ]
+}
