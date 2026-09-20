@@ -90,77 +90,93 @@ Public routes must never query unrestricted internal objects. An item becomes pu
 
 Internal UI language is Norwegian. Existing English module labels can be migrated deliberately, but do not create a random mixture. Recommended final labels: Oversikt, Prosjekter, Arbeid, Finansiering, Gården, Arrangement, Fellesskap, Offentlig.
 
-## 3. Visual system v2 — mandatory
+## 3. Visual system v3 — Evenant, mandatory
+
+> **This supersedes visual system v2**, which specified Newsreader and IBM Plex,
+> a rust `#c45732` accent and a 0–4 px panel radius. That system was replaced
+> during the September 2026 build at the owner's direction: *"Follow the
+> Evenant/Inter style guide from here on"* and *"keep the green accents, that is
+> good to keep it specific to Risen. But the type etc needs to change."* The old
+> section is recorded here only so nobody reintroduces it by reading an old
+> copy. What follows is what `app/globals.css` and `app/hub.css` actually
+> implement.
 
 ### Design intent
 
-Risen should feel like a modern editorial working journal for a historic farm: grounded, precise, cultural and practical. It must not look like a generic AI-generated SaaS dashboard.
+Warm paper, hairline structure, oversized tabular numbers, one accent colour.
+Borders carry the structure; the shadow should be deniable. It should read as a
+working instrument for a historic farm, not a SaaS dashboard.
 
-Avoid:
-
-- rounded-card grids;
-- soft purple, indigo or violet gradients;
-- generic hero layouts;
-- excessive pills;
-- sparkles, robot symbols and AI clichés;
-- cards nested inside cards;
-- evenly distributed pastel colors;
-- shadows used as the primary hierarchy mechanism.
+Still avoid, unchanged from v2: soft purple, indigo or violet gradients; generic
+hero layouts; sparkles, robot symbols and AI clichés; cards nested inside cards;
+evenly distributed pastel colours; shadows used as the primary hierarchy
+mechanism.
 
 ### Typography
 
-- Display and important numbers: `Newsreader`, weights 400/500.
-- UI and body: `IBM Plex Sans`, weights 400/500/600.
-- Large headings use restrained weight and tight tracking.
-- Use serif for page titles, project names, major totals and editorial statements.
-- Uppercase labels are small and rare, with no more than `0.10em` tracking.
+- One family: `Inter`, via `--sans`. No serif display face.
+- Headings are tightly tracked and heavy rather than large and light:
+  `letter-spacing: -0.02em` to `-0.04em`, weights 600–700.
+- **Every figure is tabular.** `.tnum` sets `font-variant-numeric: tabular-nums`
+  with `letter-spacing: -0.02em`, and any number on screen wears it.
+- Uppercase labels are small, rare and no more than `0.04em` tracking.
 
-### Color tokens
+### Colour tokens
+
+Defined on `:root` in `app/globals.css`:
 
 ```css
---paper: #f3f1e9;
---surface: #faf9f5;
---ink: #172019;
---forest: #203027;
---muted: #72766e;
---line: #cbc9bf;
---accent: #c45732;
+--bg: #F6F5F2;        /* warm paper, the page */
+--card: #FFFFFF;
+--line: #EBE9E3;      /* structural hairline */
+--line2: #F1EFEA;     /* row separator, one step quieter */
+--ink: #15151A;
+--ink2: #43424A;
+--mute: #8C8981;
+--faint: #B4B0A8;
+--accent: #2F4A37;    /* Risen forest green */
+--accent-s: #E9EFE9;  /* the accent at panel strength */
+--accent-deep: #22301F;  /* sidebar */
+--pos: #16A34A;  --pos-bg: #E8F5EC;
+--neg: #DC2626;  --neg-bg: #FCECEA;
+--warn-bg: #FFF8E8;  --warn-line: #F0DFAE;  --warn-ink: #6B4E12;
 ```
 
 Rules:
 
-- Forest owns navigation and primary actions.
-- Paper owns the main background.
-- Surface is used sparingly for interactive work areas.
-- Rust accent marks urgency, active navigation, deadlines and important editorial emphasis.
-- Status colors need text/icon support; never communicate state only through color.
+- **One accent, and for Risen it is the forest green.** It selects, links and
+  fills primary buttons. It never also means "good".
+- `--pos` and `--neg` judge direction only, and every delta carries an arrow or
+  a word so colour is never the sole signal.
+- `--accent-deep` owns the sidebar; `--bg` owns everything else.
 
-### Shape and hierarchy
+### Shape
 
-- Panel radius: 0–4 px; control radius: 2 px.
-- Ordinary panels have no drop shadow.
-- Use rules, whitespace, background shifts and typography before containers.
-- Use asymmetrical `65/35` or `60/40` layouts when appropriate.
-- Buttons are rectangular. Pills are reserved for status/filter tokens.
-- Icons normally have no rounded square behind them.
-- Focus banner is a flat editorial strip with a rust left rule.
-- Metrics sit on an open ruled row, not in a rounded card.
+Three radii, no others:
+
+| Token | Value | Used for |
+| --- | --- | --- |
+| `--r-card` | 20px | Panels and cards |
+| `--r-in` | 14px | Tiles, inputs, notices |
+| — | 999px | Anything you can click: buttons, pills, chips, toggles |
+
+`--sh` is a single near-invisible shadow. Structure comes from `--line`.
 
 ### Josefa visual identity
 
-- Book/journal metaphor, not robot or sparkle metaphor.
-- Open in a right-side working drawer on desktop and full-height sheet on mobile.
-- Responses are structured notes with citations and proposed actions, never chat bubbles.
-- Suggested prompts appear as ruled text rows, not pills.
-- Header label: `Josefa` with quiet descriptor `Risen-assistenten`.
+Unchanged from v2: book metaphor rather than robot or sparkle, a right-side
+drawer on desktop and a full-height sheet on mobile, structured notes with
+citations rather than chat bubbles, ruled text rows rather than pills, and the
+header label `Josefa` with the quiet descriptor `Risen-assistenten`.
 
 ### Design acceptance criteria
 
-- No default purple/blue AI gradient anywhere.
-- No panel radius above 4 px in `/hub`.
+- No purple or blue AI gradient anywhere.
+- Only the three radii above appear in `/hub`.
 - No `Sparkles` or `Bot` icon in Josefa UI.
-- A screenshot should remain recognizably Risen with icons removed: typography, palette and layout must carry identity.
-- Desktop, tablet and 375 px mobile layouts remain usable.
+- Every number carries `.tnum`.
+- A screenshot stays recognisably Risen with the icons removed.
+- Desktop, tablet and 390 px mobile all work, with no horizontal page scroll.
 
 ## 4. Target route architecture
 
