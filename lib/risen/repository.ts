@@ -342,3 +342,11 @@ export async function listProposals(): Promise<Loaded<Proposal[]>> {
     return seeded(seedProposals, describe(error));
   }
 }
+
+/** One work item by id, for the detail panel. */
+export async function getWorkItem(id: string): Promise<WorkItem | null> {
+  const db = tryGetDb();
+  if (!db) return seedWorkItems.find(item => item.id === id) ?? null;
+  const rows = await db.select().from(workItems).where(eq(workItems.id, id)).limit(1);
+  return rows.length > 0 ? toWorkItem(rows[0]) : null;
+}

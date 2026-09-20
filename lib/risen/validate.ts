@@ -131,11 +131,24 @@ export function parseNewWorkItem(input: unknown): Result<NewWorkItem> {
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
 }
 
+const WEATHER = ['any', 'dry', 'indoor', 'frost_free'] as const;
+
 export interface WorkItemPatch {
+  title?: string;
+  detail?: string | null;
   status?: WorkItem['status'];
   priority?: WorkItem['priority'];
+  type?: WorkItem['type'];
   assignee?: string | null;
+  projectId?: string | null;
+  placeId?: string | null;
+  startAt?: string | null;
   dueDate?: string | null;
+  estimatedHours?: number | null;
+  requiredPeople?: number | null;
+  suitableForDugnad?: boolean;
+  weatherDependency?: WorkItem['weatherDependency'];
+  position?: number;
 }
 
 /** Only the fields present are changed, so a patch never blanks what it omits. */
@@ -144,13 +157,49 @@ export function parseWorkItemPatch(input: unknown): Result<WorkItemPatch> {
   const body = asObject(input, errors);
   const patch: WorkItemPatch = {};
 
+  if ('title' in body) {
+    const title = text(body.title, 'Tittel', 200, errors);
+    if (title !== null) patch.title = title;
+  }
+  if ('detail' in body) patch.detail = text(body.detail, 'Beskrivelse', 4000, errors, false);
   if ('status' in body) patch.status = oneOf(body.status, 'Status', WORK_STATUSES, errors, 'inbox');
   if ('priority' in body) patch.priority = oneOf(body.priority, 'Prioritet', WORK_PRIORITIES, errors, 'normal');
+  if ('type' in body) patch.type = oneOf(body.type, 'Type', WORK_TYPES, errors, 'task');
   if ('assignee' in body) patch.assignee = text(body.assignee, 'Ansvarlig', 100, errors, false);
+  if ('projectId' in body) patch.projectId = text(body.projectId, 'Prosjekt', 64, errors, false);
+  if ('placeId' in body) patch.placeId = text(body.placeId, 'Sted', 64, errors, false);
+  if ('startAt' in body) patch.startAt = isoDate(body.startAt, 'Startdato', errors);
   if ('dueDate' in body) patch.dueDate = isoDate(body.dueDate, 'Frist', errors);
+  if ('estimatedHours' in body) patch.estimatedHours = wholeNumber(body.estimatedHours, 'Anslått tid', 0, 1000, errors);
+  if ('requiredPeople' in body) patch.requiredPeople = wholeNumber(body.requiredPeople, 'Antall personer', 0, 100, errors);
+  if ('suitableForDugnad' in body) patch.suitableForDugnad = body.suitableForDugnad === true;
+  if ('weatherDependency' in body) {
+    patch.weatherDependency = body.weatherDependency === null
+      ? null
+      : oneOf(body.weatherDependency, 'Væravhengighet', WEATHER, errors, 'any');
+  }
+  if ('position' in body) {
+    const position = wholeNumber(body.position, 'Posisjon', 0, 100000, errors);
+    if (position !== null) patch.position = position;
+  }
 
   if (Object.keys(patch).length === 0) errors.push('Ingen felter å oppdatere');
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: patch };
+}
+
+export interface CommentInput {
+  body: string;
+  authorName: string | null;
+}
+
+export function parseComment(input: unknown): Result<CommentInput> {
+  const errors: string[] = [];
+  const raw = asObject(input, errors);
+  const value: CommentInput = {
+    body: text(raw.body, 'Kommentar', 4000, errors) ?? '',
+    authorName: text(raw.authorName, 'Navn', 100, errors, false),
+  };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
 }
 
 export interface ProjectPatch {

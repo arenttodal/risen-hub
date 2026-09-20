@@ -72,9 +72,20 @@ export async function updateWorkItem(id: string, patch: WorkItemPatch): Promise<
     // Completion time is derived from the status rather than trusted from input.
     changes.completedAt = patch.status === 'done' ? (before.completedAt ?? now) : null;
   }
+  if (patch.title !== undefined) changes.title = patch.title;
+  if (patch.detail !== undefined) changes.detail = patch.detail;
   if (patch.priority !== undefined) changes.priority = patch.priority;
+  if (patch.type !== undefined) changes.type = patch.type;
   if (patch.assignee !== undefined) changes.assignee = patch.assignee;
+  if (patch.projectId !== undefined) changes.projectId = patch.projectId;
+  if (patch.placeId !== undefined) changes.placeId = patch.placeId;
+  if (patch.startAt !== undefined) changes.startAt = patch.startAt;
   if (patch.dueDate !== undefined) changes.dueDate = patch.dueDate;
+  if (patch.estimatedHours !== undefined) changes.estimatedHours = patch.estimatedHours;
+  if (patch.requiredPeople !== undefined) changes.requiredPeople = patch.requiredPeople;
+  if (patch.suitableForDugnad !== undefined) changes.suitableForDugnad = patch.suitableForDugnad ? 1 : 0;
+  if (patch.weatherDependency !== undefined) changes.weatherDependency = patch.weatherDependency;
+  if (patch.position !== undefined) changes.position = patch.position;
 
   await db.update(workItems).set(changes).where(eq(workItems.id, id));
 

@@ -7,6 +7,7 @@ import {
   isPublished,
   isVerified,
   PRIORITY_RANK,
+  subtaskProgress,
 } from '../lib/risen/types.ts';
 import type { WorkPriority } from '../lib/risen/types.ts';
 
@@ -84,5 +85,34 @@ describe('isPublished', () => {
   it('never publishes a private or members-only project', () => {
     assert.equal(isPublished({ visibility: 'members', publishedAt: '2026-05-04T09:00:00.000Z' }), false);
     assert.equal(isPublished({ visibility: 'private', publishedAt: '2026-05-04T09:00:00.000Z' }), false);
+  });
+});
+
+describe('subtaskProgress', () => {
+  it('counts completed against total', () => {
+    const progress = subtaskProgress([
+      { status: 'done' },
+      { status: 'done' },
+      { status: 'ready' },
+      { status: 'inbox' },
+    ]);
+    assert.equal(progress.done, 2);
+    assert.equal(progress.total, 4);
+  });
+
+  it('excludes cancelled subtasks from the total, so progress is not punished for dropping work', () => {
+    const progress = subtaskProgress([{ status: 'done' }, { status: 'cancelled' }]);
+    assert.equal(progress.done, 1);
+    assert.equal(progress.total, 1);
+  });
+
+  it('reports zero of zero rather than dividing by nothing', () => {
+    const progress = subtaskProgress([]);
+    assert.equal(progress.total, 0);
+    assert.equal(progress.done, 0);
+  });
+
+  it('carries a text label, so progress is not conveyed by a bar alone', () => {
+    assert.match(subtaskProgress([{ status: 'done' }]).label, /1 av 1/);
   });
 });
