@@ -12,6 +12,9 @@
     "types": ["node", "@cloudflare/workers-types", "vinext/types"],
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Node runs the tests in `tests/` by stripping types, which needs the
+    // explicit `.ts` extension on relative imports. Safe with noEmit.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "paths": {
