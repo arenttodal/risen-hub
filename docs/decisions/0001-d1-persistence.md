@@ -78,17 +78,13 @@ not.
 
 ### To turn D1 on in production
 
-1. Create the database: `npx wrangler d1 create risen-hub` (or via the
-   dashboard) and copy its id.
-2. Add `CLOUDFLARE_D1_DATABASE_ID` as a build variable on the Worker, and
-   `CLOUDFLARE_D1_DATABASE_NAME` if the name is not `site-creator-d1`.
-3. Apply the migrations in `drizzle/` to the remote database:
-   `npx wrangler d1 migrations apply <name> --remote`, or execute each
-   `drizzle/*.sql` in journal order with `wrangler d1 execute --remote --file`.
-4. Redeploy and confirm the seed notice is gone from `/hub`.
+See `docs/D1-SETUP.md` for the step-by-step version. In short: create the
+database, set `CLOUDFLARE_D1_DATABASE_ID` as a build variable, run
+`npm run db:remote -- --database <name> --confirm`, redeploy.
 
-Step 3 is still manual. Automating it in the deploy command is the next
-decision to make, and it must happen before real data is entered.
+Applying migrations is a deliberate manual step rather than part of the deploy
+command. Running schema changes automatically on every deploy is a decision
+worth making on purpose, not by default; revisit it once there is real data.
 
 ## Alternatives considered
 
