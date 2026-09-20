@@ -137,6 +137,14 @@ always run it later.
 
 Do them in order — file 2 inserts rows into tables that file 1 creates.
 
+Both files are safe to run more than once, and safe to run against a database
+that is already half set up. Every `CREATE` is `IF NOT EXISTS` and every insert
+is `INSERT OR IGNORE`, so nothing is duplicated and nothing errors.
+
+> **The console stops at the first error.** If a statement fails, everything
+> after it in the same paste is abandoned — with no partial success message.
+> That is why these files never error on things that already exist.
+
 ### Checking it worked
 
 Still in the **Console** tab, run:
@@ -337,10 +345,16 @@ You pasted one of the numbered files from `drizzle/` rather than the ones in
 markers, and a paste that loses its line breaks turns the rest of the file into
 a comment. Use the two files in `drizzle/console/`.
 
+**"table `rsvps` already exists" or similar.**
+You pasted one of the numbered files from `drizzle/` rather than
+`drizzle/console/01-schema.sql`. The numbered files are not re-runnable, and
+the console abandons the rest of the batch after the first error, so nothing
+else gets created. Paste `drizzle/console/01-schema.sql` — it skips whatever
+is already there and creates the rest.
+
 **A SQL file errors partway through.**
-Run them in order: schema, then seed. If you are unsure what ran, it is safe to
-re-run both — `CREATE TABLE` will complain that a table already exists, which
-you can ignore, and the seed cannot create duplicates.
+Run them in order: schema, then seed. If you are unsure what ran, just run both
+again. They are idempotent.
 
 ---
 
