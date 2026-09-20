@@ -102,48 +102,48 @@ against it, in order.
 
 ### Getting the SQL
 
-There are two files. For each one:
+The SQL is split into small files, because the console truncates a paste that
+is too long — and a truncated paste fails with `incomplete input: SQLITE_ERROR`
+*after* silently applying everything before the cut. Each file below is well
+under the limit.
 
-1. Open the link below.
-2. Click the **Raw** button (top right of the file view).
-3. Select everything (`Ctrl`+`A`, or `Cmd`+`A` on a Mac) and copy it
-   (`Ctrl`+`C` / `Cmd`+`C`).
+For each one: open the link, click **Raw**, select all (`Ctrl`/`Cmd`+`A`) and
+copy.
 
-| Order | Link | What it does |
+| Order | File | What it does |
 |---|---|---|
-| 1 | [`drizzle/console/01-schema.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/01-schema.sql) | Creates every table the site needs |
-| 2 | [`drizzle/console/02-seed.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/02-seed.sql) | Adds the four demo projects and their tasks — **optional** |
+| 1 | [`schema-00.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-00.sql) | The dugnad sign-up table |
+| 2 | [`schema-01.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-01.sql) | Projects, places, milestones, work items, activity log |
+| 3 | [`schema-02.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-02.sql) | Funding, events, members, proposals |
+| 4 | [`seed-01.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/seed-01.sql) | Demo records, part 1 — **optional** |
+| 5 | [`seed-02.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/seed-02.sql) | Demo records, part 2 — **optional** |
 
-Skip file 2 if you would rather start with a completely empty Risen. You can
-always run it later.
+Skip 4 and 5 if you would rather start with an empty Risen. You can run them
+later.
 
-> **Use the files in `drizzle/console/`, not the numbered ones directly in
-> `drizzle/`.** The originals carry `--> statement-breakpoint` markers for the
-> migration tooling. In SQL, `--` starts a comment that runs to the end of the
-> line, so if a paste loses its line breaks — which browsers often do — that
-> marker comments out everything after it. The console then reports
-> "SQL code did not contain a statement", or worse, silently skips part of the
-> schema. The files in `drizzle/console/` contain no comments at all and paste
-> safely either way.
+> **Use the files in `drizzle/console/`, not the numbered ones in `drizzle/`.**
+> The originals carry `--> statement-breakpoint` markers. In SQL `--` starts a
+> comment that runs to the end of the line, so a paste that loses its line
+> breaks comments out everything after it. The console files contain no
+> comments at all and paste safely either way.
 
 ### Running the SQL
 
-1. Back in Cloudflare, go to **Storage & databases** → **D1** → **risen-hub**.
+1. In Cloudflare, go to **Storage & databases** → **D1** → **risen-hub**.
 2. Open the **Console** tab.
-3. Paste the contents of file 1 into the query box.
-4. Click **Execute** (or **Run**).
-5. Wait for it to report success, then **clear the box**, paste file 2, and
-   execute.
+3. Paste file 1, click **Execute**, wait for success.
+4. Clear the box, paste the next file, execute. Repeat through the list.
 
-Do them in order — file 2 inserts rows into tables that file 1 creates.
+Run them **in order** — later files reference tables the earlier ones create.
 
-Both files are safe to run more than once, and safe to run against a database
-that is already half set up. Every `CREATE` is `IF NOT EXISTS` and every insert
-is `INSERT OR IGNORE`, so nothing is duplicated and nothing errors.
+Every file is safe to run more than once, and safe against a half-set-up
+database: every `CREATE` is `IF NOT EXISTS` and every insert is
+`INSERT OR IGNORE`.
 
-> **The console stops at the first error.** If a statement fails, everything
-> after it in the same paste is abandoned — with no partial success message.
-> That is why these files never error on things that already exist.
+> **The console stops at the first error**, and abandons the rest of that paste
+> with no partial-success message. That is why these files never error on things
+> that already exist — and why a truncated paste is dangerous rather than
+> merely annoying.
 
 ### Checking it worked
 
@@ -345,12 +345,16 @@ You pasted one of the numbered files from `drizzle/` rather than the ones in
 markers, and a paste that loses its line breaks turns the rest of the file into
 a comment. Use the two files in `drizzle/console/`.
 
+**`incomplete input: SQLITE_ERROR`.**
+The paste was cut off before the end. Use the split files in
+`drizzle/console/`, one at a time — each is sized to fit in a single paste.
+Whatever ran before the cut is already applied, and re-running the file is
+safe.
+
 **"table `rsvps` already exists" or similar.**
-You pasted one of the numbered files from `drizzle/` rather than
-`drizzle/console/01-schema.sql`. The numbered files are not re-runnable, and
-the console abandons the rest of the batch after the first error, so nothing
-else gets created. Paste `drizzle/console/01-schema.sql` — it skips whatever
-is already there and creates the rest.
+You pasted one of the numbered files from `drizzle/` rather than the ones in
+`drizzle/console/`. The originals are not re-runnable, and the console abandons
+the rest of the batch after the first error.
 
 **A SQL file errors partway through.**
 Run them in order: schema, then seed. If you are unsure what ran, just run both
@@ -360,12 +364,10 @@ again. They are idempotent.
 
 ## Later: when the schema changes
 
-When a new migration file appears in `drizzle/`, apply it the same way — paste
-the regenerated `drizzle/console/01-schema.sql` into the D1 console (Route A),
-or run `npm run db:remote -- --database risen-hub --confirm` (Route B).
-
-Re-running the schema file is safe: the tables that already exist will report
-an error you can ignore, and the new ones are created.
+When a new migration appears in `drizzle/`, `npm run db:console-sql` writes a
+matching `drizzle/console/schema-NN.sql`. Paste that one file into the console
+(Route A), or run `npm run db:remote -- --database risen-hub --confirm`
+(Route B). You only need the new file; the earlier ones are already applied.
 
 You can switch between the two freely. If you set the database up by pasting
 SQL and later run the script, it notices the tables already exist, records them
