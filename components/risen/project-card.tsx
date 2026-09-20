@@ -43,7 +43,7 @@ export function ProjectCard({ project }: { project: Project }) {
 
       {project.nextAction && (
         <p className="project-next">
-          <span className="kicker">NESTE STEG</span>
+          <span className="kicker">Neste steg</span>
           {project.nextAction}
         </p>
       )}

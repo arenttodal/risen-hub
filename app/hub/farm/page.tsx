@@ -36,7 +36,7 @@ export default async function FarmPage() {
       <div className="hub-content">
         <DataSourceNotice source={placesResult.source} error={placesResult.error} />
         <EmptyState
-          kicker="GÅRDEN"
+          kicker="Gården"
           title="Ingen steder registrert"
           description="Bygninger og områder lever lenger enn prosjektene som skjer på dem, så tilstand, historikk og dokumentasjon hører hjemme her og ikke på et prosjekt som en dag blir ferdig."
           points={[
@@ -56,7 +56,7 @@ export default async function FarmPage() {
 
       <div className="page-head">
         <div>
-          <span className="kicker">GÅRDEN</span>
+          <span className="kicker">Gården</span>
           <h2>Steder og bygninger</h2>
         </div>
         <p>{places.length} registrerte steder</p>

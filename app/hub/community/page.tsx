@@ -17,7 +17,7 @@ export default async function CommunityPage() {
 
       <div className="page-head">
         <div>
-          <span className="kicker">FELLESSKAP</span>
+          <span className="kicker">Fellesskap</span>
           <h2>Medlemmer og beslutninger</h2>
         </div>
         <p>
@@ -37,7 +37,7 @@ export default async function CommunityPage() {
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
-            <span className="kicker">MEDLEMMER</span>
+            <span className="kicker">Medlemmer</span>
             <h3>Hvem som er med</h3>
           </div>
           <span className="count-tag">{members.length}</span>
@@ -74,7 +74,7 @@ export default async function CommunityPage() {
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
-            <span className="kicker">FORSLAG</span>
+            <span className="kicker">Forslag</span>
             <h3>Det som skal avgjøres</h3>
           </div>
           <span className="count-tag">{proposals.length}</span>

@@ -32,7 +32,7 @@ export default async function OverviewPage() {
 
       <section className="focus-card">
         <div>
-          <span className="kicker">NESTE VIKTIGE TREKK</span>
+          <span className="kicker">Neste viktige trekk</span>
           <h2>Gjør TEFT-søknaden sendeklar.</h2>
           <p>Fristen er 1. oktober. Tre dokumenter og to budsjettposter mangler.</p>
         </div>
@@ -66,7 +66,7 @@ export default async function OverviewPage() {
 
       <div className="hub-grid">
         <section className="hub-panel projects-panel">
-          <PanelHeading kicker="PROSJEKTER" title="Det vi bygger nå" action="Se alle" href="/hub/projects" />
+          <PanelHeading kicker="Prosjekter" title="Det vi bygger nå" action="Se alle" href="/hub/projects" />
           {projects.length === 0 ? (
             <p className="panel-empty">Ingen prosjekter er opprettet ennå.</p>
           ) : (
@@ -94,7 +94,7 @@ export default async function OverviewPage() {
         </section>
 
         <section className="hub-panel deadline-panel">
-          <PanelHeading kicker="FUNDING" title="Kommende frister" action="Kalender" href="/hub/funding" />
+          <PanelHeading kicker="Finansiering" title="Kommende frister" action="Kalender" href="/hub/funding" />
           {schemes.slice(0, 4).map(scheme => (
             <article className="deadline-row" key={scheme.id}>
               <time>{formatDate(scheme.deadlineAt)}</time>
@@ -102,7 +102,9 @@ export default async function OverviewPage() {
                 <strong>{scheme.name}</strong>
                 <span>{projects.find(project => project.id === scheme.projectId)?.name ?? 'Uten prosjekt'}</span>
               </div>
-              <i className={isVerified(scheme) ? 'verified' : 'unverified'} />
+              <span className={`status-pill scheme-${isVerified(scheme) ? 'verified' : 'unverified'}`}>
+                {isVerified(scheme) ? 'Bekreftet' : 'Ikke bekreftet'}
+              </span>
             </article>
           ))}
           <p className="panel-foot-note">
@@ -113,7 +115,7 @@ export default async function OverviewPage() {
         </section>
 
         <section className="hub-panel work-panel">
-          <PanelHeading kicker="WORK" title="Klar til å tas tak i" action="Se alt arbeid" href="/hub/work" />
+          <PanelHeading kicker="Arbeid" title="Klar til å tas tak i" action="Se alt arbeid" href="/hub/work" />
           {openWork.length === 0 ? (
             <p className="panel-empty">Ingen åpne oppgaver.</p>
           ) : (
@@ -135,7 +137,7 @@ export default async function OverviewPage() {
         </section>
 
         <section className="hub-panel angle-panel">
-          <PanelHeading kicker="IDÉBANK" title="Funding angles" action="Se alle" href="/hub/funding" />
+          <PanelHeading kicker="Idébank" title="Funding angles" action="Se alle" href="/hub/funding" />
           {angles.map(angle => (
             <article key={angle.id}>
               <span>

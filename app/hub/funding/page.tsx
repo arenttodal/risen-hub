@@ -26,7 +26,7 @@ export default async function FundingPage() {
       <div className="hub-content">
         <DataSourceNotice source={schemesResult.source} error={schemesResult.error} />
         <EmptyState
-          kicker="FINANSIERING"
+          kicker="Finansiering"
           title="Ingen ordninger registrert"
           description="Støtteordninger, søknader, dokumentkrav og frister hører til de samme prosjektene som resten av plattformen."
           points={[
@@ -48,7 +48,7 @@ export default async function FundingPage() {
 
       <div className="page-head">
         <div>
-          <span className="kicker">FINANSIERING</span>
+          <span className="kicker">Finansiering</span>
           <h2>Ordninger og argumenter</h2>
         </div>
         <p>
@@ -72,7 +72,7 @@ export default async function FundingPage() {
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
-            <span className="kicker">ORDNINGER</span>
+            <span className="kicker">Ordninger</span>
             <h3>Frister</h3>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default async function FundingPage() {
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
-            <span className="kicker">IDÉBANK</span>
+            <span className="kicker">Idébank</span>
             <h3>Funding angles</h3>
           </div>
         </div>

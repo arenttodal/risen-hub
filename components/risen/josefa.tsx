@@ -76,10 +76,10 @@ export function Josefa({ open, onClose }: { open: boolean; onClose: () => void }
 
         {note && (
           <article className="josefa-note">
-            <span className="kicker">NOTAT</span>
+            <span className="kicker">Notat</span>
             <h4>{note.heading}</h4>
             <p>{note.body}</p>
-            <span className="kicker">KILDER</span>
+            <span className="kicker">Kilder</span>
             <ul className="josefa-citations">
               {note.citations.map(citation => (
                 <li key={citation.label}>

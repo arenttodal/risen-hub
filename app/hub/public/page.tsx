@@ -23,7 +23,7 @@ export default async function PublicPage() {
 
       <div className="page-head">
         <div>
-          <span className="kicker">OFFENTLIG</span>
+          <span className="kicker">Offentlig</span>
           <h2>Hva verden ser</h2>
         </div>
         <p>
@@ -42,7 +42,7 @@ export default async function PublicPage() {
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
-            <span className="kicker">PUBLISERT</span>
+            <span className="kicker">Publisert</span>
             <h3>Synlig for alle</h3>
           </div>
           <span className="count-tag">{published.length}</span>
@@ -70,7 +70,7 @@ export default async function PublicPage() {
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
-            <span className="kicker">IKKE PUBLISERT</span>
+            <span className="kicker">Ikke publisert</span>
             <h3>Holdes internt</h3>
           </div>
           <span className="count-tag">{withheld.length}</span>
@@ -99,7 +99,7 @@ export default async function PublicPage() {
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
-            <span className="kicker">ARRANGEMENT</span>
+            <span className="kicker">Arrangement</span>
             <h3>Publiseringsstatus</h3>
           </div>
           <span className="count-tag">{events.length}</span>
