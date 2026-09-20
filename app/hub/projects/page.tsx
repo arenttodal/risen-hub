@@ -14,7 +14,7 @@ export default async function ProjectsPage() {
       <div className="hub-content">
         <DataSourceNotice source={source} error={error} />
         <EmptyState
-          kicker="PROSJEKTER"
+          kicker="Prosjekter"
           title="Ingen prosjekter ennå"
           description="Et prosjekt er den kanoniske beholderen i Risen. Oppgaver, budsjett, søknader, dokumenter, arrangement og offentlig fremdrift peker alle tilbake hit, i stedet for å holde hver sin kopi."
           points={[
@@ -36,7 +36,7 @@ export default async function ProjectsPage() {
       <DataSourceNotice source={source} error={error} />
       <div className="page-head">
         <div>
-          <span className="kicker">PROSJEKTER</span>
+          <span className="kicker">Prosjekter</span>
           <h2>Det vi bygger</h2>
         </div>
         <p>

@@ -45,7 +45,7 @@ export default async function WorkPage() {
       <div className="hub-content">
         <DataSourceNotice source={workResult.source} error={workResult.error} />
         <EmptyState
-          kicker="ARBEID"
+          kicker="Arbeid"
           title="Ingen saker ennå"
           description="Oppgaver, reparasjoner, innkjøp og dugnadskandidater deler én innboks, slik at én fangst kan bli hva som helst av det. Kravene er små med vilje: tittel, prosjekt eller sted, type og prioritet."
           points={[
@@ -69,7 +69,7 @@ export default async function WorkPage() {
 
       <div className="page-head">
         <div>
-          <span className="kicker">ARBEID</span>
+          <span className="kicker">Arbeid</span>
           <h2>Alt som står på gården</h2>
         </div>
         <p>
@@ -97,7 +97,7 @@ export default async function WorkPage() {
           <section className="hub-panel work-view" key={view.key}>
             <div className="panel-heading">
               <div>
-                <span className="kicker">{view.label.toUpperCase()}</span>
+                <span className="kicker">{view.label}</span>
                 <h3>{view.describe}</h3>
               </div>
               <span className="count-tag">{items.length}</span>
@@ -123,7 +123,7 @@ export default async function WorkPage() {
         <section className="hub-panel work-view">
           <div className="panel-heading">
             <div>
-              <span className="kicker">FERDIG</span>
+              <span className="kicker">Ferdig</span>
               <h3>Gjort unna</h3>
             </div>
             <span className="count-tag">{done.length}</span>

@@ -20,7 +20,7 @@ export default async function EventsPage() {
       <div className="hub-content">
         <DataSourceNotice source={eventsResult.source} error={eventsResult.error} />
         <EmptyState
-          kicker="ARRANGEMENT"
+          kicker="Arrangement"
           title="Ingen arrangement ennå"
           description="Festival, dugnadshelger og samlinger, med program, vaktlister og frivilligbehov — koblet til prosjektene de støtter."
           points={[
@@ -40,7 +40,7 @@ export default async function EventsPage() {
 
       <div className="page-head">
         <div>
-          <span className="kicker">ARRANGEMENT</span>
+          <span className="kicker">Arrangement</span>
           <h2>Dugnad, festival og samlinger</h2>
         </div>
         <p>

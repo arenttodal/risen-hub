@@ -34,7 +34,7 @@ export function HubShell({ children }: { children: ReactNode }) {
           <Link className="hub-brand" href="/">
             <Mountain size={25} />
             <span>
-              risen<small>FARM PLATFORM</small>
+              risen<small>Farm platform</small>
             </span>
           </Link>
           <nav aria-label="Risen-moduler">
