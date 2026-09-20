@@ -102,23 +102,29 @@ against it, in order.
 
 ### Getting the SQL
 
-Each piece lives in a file on GitHub. For each one:
+There are two files. For each one:
 
 1. Open the link below.
 2. Click the **Raw** button (top right of the file view).
 3. Select everything (`Ctrl`+`A`, or `Cmd`+`A` on a Mac) and copy it
    (`Ctrl`+`C` / `Cmd`+`C`).
 
-The three files, **in this order**:
-
 | Order | Link | What it does |
 |---|---|---|
-| 1 | [`drizzle/0000_nebulous_ricochet.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/0000_nebulous_ricochet.sql) | Creates the dugnad sign-up table |
-| 2 | [`drizzle/0001_furry_tyrannus.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/0001_furry_tyrannus.sql) | Creates projects, places, milestones, work items, activity log |
-| 3 | [`drizzle/seed.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/seed.sql) | Adds the four demo projects and their tasks — **optional** |
+| 1 | [`drizzle/console/01-schema.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/01-schema.sql) | Creates every table the site needs |
+| 2 | [`drizzle/console/02-seed.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/02-seed.sql) | Adds the four demo projects and their tasks — **optional** |
 
-Skip file 3 if you would rather start with a completely empty Risen. You can
+Skip file 2 if you would rather start with a completely empty Risen. You can
 always run it later.
+
+> **Use the files in `drizzle/console/`, not the numbered ones directly in
+> `drizzle/`.** The originals carry `--> statement-breakpoint` markers for the
+> migration tooling. In SQL, `--` starts a comment that runs to the end of the
+> line, so if a paste loses its line breaks — which browsers often do — that
+> marker comments out everything after it. The console then reports
+> "SQL code did not contain a statement", or worse, silently skips part of the
+> schema. The files in `drizzle/console/` contain no comments at all and paste
+> safely either way.
 
 ### Running the SQL
 
@@ -128,14 +134,8 @@ always run it later.
 4. Click **Execute** (or **Run**).
 5. Wait for it to report success, then **clear the box**, paste file 2, and
    execute.
-6. Repeat for file 3 if you want the demo data.
 
-**Do them one at a time, in order.** File 2 will fail if file 1 has not run,
-and file 3 will fail if file 2 has not run — the later ones depend on tables
-the earlier ones create.
-
-> Ignore the `--> statement-breakpoint` comment lines in the files. They are
-> markers for tooling, and SQL treats them as comments.
+Do them in order — file 2 inserts rows into tables that file 1 creates.
 
 ### Checking it worked
 
@@ -331,19 +331,27 @@ Same cause — file 2 did not run, or ran against a different database.
 **The sign-up form still says availability is unavailable.**
 The `rsvps` table comes from file 1. Run it.
 
+**"SQL code did not contain a statement".**
+You pasted one of the numbered files from `drizzle/` rather than the ones in
+`drizzle/console/`. The numbered files contain `--> statement-breakpoint`
+markers, and a paste that loses its line breaks turns the rest of the file into
+a comment. Use the two files in `drizzle/console/`.
+
 **A SQL file errors partway through.**
-Run the files strictly in order: 1, then 2, then 3. If you are unsure what ran,
-it is safe to re-run all three — `CREATE TABLE` statements will complain that a
-table already exists, which you can ignore, and the seed file cannot create
-duplicates.
+Run them in order: schema, then seed. If you are unsure what ran, it is safe to
+re-run both — `CREATE TABLE` will complain that a table already exists, which
+you can ignore, and the seed cannot create duplicates.
 
 ---
 
 ## Later: when the schema changes
 
 When a new migration file appears in `drizzle/`, apply it the same way — paste
-it into the D1 console (Route A), or run
-`npm run db:remote -- --database risen-hub --confirm` (Route B).
+the regenerated `drizzle/console/01-schema.sql` into the D1 console (Route A),
+or run `npm run db:remote -- --database risen-hub --confirm` (Route B).
+
+Re-running the schema file is safe: the tables that already exist will report
+an error you can ignore, and the new ones are created.
 
 You can switch between the two freely. If you set the database up by pasting
 SQL and later run the script, it notices the tables already exist, records them
