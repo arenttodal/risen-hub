@@ -8,6 +8,13 @@
       "when": 1788694672210,
       "tag": "0000_nebulous_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789927743841,
+      "tag": "0001_furry_tyrannus",
+      "breakpoints": true
     }
   ]
 }
