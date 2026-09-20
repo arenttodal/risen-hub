@@ -5,6 +5,7 @@ import { byPriority, isOpenWork, type WorkItem } from '@/lib/risen/types';
 import { formatDate } from '@/lib/risen/format';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
 import { EmptyState } from '@/components/risen/empty-state';
+import { WorkStatusControl } from '@/components/risen/work-status';
 
 export const metadata: Metadata = { title: 'Arbeid · Risen Hub' };
 
@@ -108,11 +109,13 @@ export default async function WorkPage() {
                 <div>
                   <strong>{item.title}</strong>
                   <span>
-                    {projectName(item.projectId)} · {typeLabels[item.type]} · {statusLabels[item.status]}
+                    {projectName(item.projectId)} · {typeLabels[item.type]}
+                    {item.estimatedHours ? ` · ${item.estimatedHours} t` : ''}
                     {item.dueDate ? ` · frist ${formatDate(item.dueDate)}` : ''}
                   </span>
                 </div>
                 <small>{item.assignee || 'Ledig'}</small>
+                <WorkStatusControl id={item.id} status={item.status} title={item.title} />
               </article>
             ))}
           </section>
@@ -133,7 +136,9 @@ export default async function WorkPage() {
               <span className={`priority ${item.priority}`} />
               <div>
                 <strong>{item.title}</strong>
-                <span>{projectName(item.projectId)}</span>
+                <span>
+                  {projectName(item.projectId)} · {statusLabels[item.status]}
+                </span>
               </div>
               <small>{item.assignee || '—'}</small>
             </article>
@@ -142,8 +147,9 @@ export default async function WorkPage() {
       )}
 
       <p className="page-foot-note">
-        Saker vises her, men kan ikke opprettes eller endres ennå. Skrivetilgang mot databasen er
-        neste steg — se <Link href="/hub/projects">Prosjekter</Link> for hva hver sak henger på.
+        Status kan endres direkte i listene over, og hver endring skrives til aktivitetsloggen.
+        Nye saker opprettes med <strong>Ny sak</strong> i toppraden, eller ved å trykke{' '}
+        <kbd>N</kbd>. Se <Link href="/hub/projects">Prosjekter</Link> for hva hver sak henger på.
       </p>
     </div>
   );
