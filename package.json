@@ -16,7 +16,8 @@
     "db:generate": "drizzle-kit generate",
     "db:local": "node scripts/d1-local.mjs",
     "db:remote": "node scripts/d1-remote.mjs",
-    "db:seed-sql": "node scripts/seed-sql.mjs"
+    "db:seed-sql": "node scripts/seed-sql.mjs",
+    "db:console-sql": "node scripts/console-sql.mjs"
   },
   "dependencies": {
     "react": "19.2.6",
