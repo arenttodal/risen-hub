@@ -139,7 +139,9 @@ export default async function FundingPage() {
               return (
                 <tr key={scheme.id}>
                   <td>
-                    <strong>{scheme.name}</strong>
+                    <strong>
+                      <Link href={`/hub/funding/${scheme.id}`}>{scheme.name}</Link>
+                    </strong>
                     {scheme.provider && <small>{scheme.provider}</small>}
                     {scheme.eligibilitySummary && <small>{scheme.eligibilitySummary}</small>}
                   </td>

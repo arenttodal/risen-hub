@@ -799,3 +799,15 @@
 .requirement-rest summary { padding: 12px 0 4px; font-size: 13px; color: var(--accent); cursor: pointer; border-top: 1px solid var(--line2); }
 .requirement-rest summary:hover { text-decoration: underline; }
 .requirement-rest[open] summary { margin-bottom: 2px; }
+
+/* ---------- Scheme detail ---------- */
+/* The funder's own wording is often a sentence, not a figure, so this slot
+   drops the oversized-number treatment rather than shrinking a number. */
+.metric-row .terms { font-size: 14.5px; font-weight: 600; line-height: 1.35; letter-spacing: -0.01em; display: block; }
+.source-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--accent); }
+.source-link:hover { text-decoration: underline; }
+.detail-next strong { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.template-sections { margin: 8px 0 0; display: grid; gap: 18px; }
+.template-sections div { display: grid; gap: 5px; border-top: 1px solid var(--line2); padding-top: 14px; }
+.template-sections dt { font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mute); }
+.template-sections dd { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink2); }

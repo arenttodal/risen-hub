@@ -1,6 +1,7 @@
 import { asc, count, eq, or } from 'drizzle-orm';
 import { tryGetDb } from '@/db';
 import {
+  applicationTemplates,
   documentRequirements,
   events,
   fundingAngleProjects,
@@ -411,5 +412,88 @@ export async function listSchemeAngleLinks(): Promise<{ schemeId: string; angleI
     return await db.select().from(fundingSchemeAngles);
   } catch {
     return [];
+  }
+}
+
+export interface SchemeDetail {
+  scheme: FundingScheme;
+  requirements: { id: string; name: string; description: string | null; source: string }[];
+  angles: FundingAngle[];
+  template: { id: string; title: string; sections: Record<string, string> } | null;
+}
+
+/**
+ * One scheme with everything attached to it.
+ *
+ * The template's `sections` is stored as JSON text. A malformed one yields a
+ * null template rather than a thrown page: a broken boilerplate is a nuisance,
+ * a scheme you cannot open at all is a blocker.
+ */
+export async function getSchemeDetail(id: string): Promise<Loaded<SchemeDetail | null>> {
+  const db = tryGetDb();
+  if (!db) return seeded(null);
+  try {
+    const rows = await db.select().from(fundingSchemes).where(eq(fundingSchemes.id, id)).limit(1);
+    if (rows.length === 0) return { data: null, source: 'database' };
+    const scheme = toScheme(rows[0]);
+
+    const [documentLinks, angleLinks] = await Promise.all([
+      db.select().from(fundingSchemeDocuments).where(eq(fundingSchemeDocuments.schemeId, id)),
+      db.select().from(fundingSchemeAngles).where(eq(fundingSchemeAngles.schemeId, id)),
+    ]);
+
+    const documentIds = new Set(documentLinks.map(link => link.documentId));
+    const angleIds = new Set(angleLinks.map(link => link.angleId));
+
+    const [allDocuments, allAngles, templates] = await Promise.all([
+      documentIds.size > 0 ? db.select().from(documentRequirements) : Promise.resolve([]),
+      angleIds.size > 0 ? db.select().from(fundingAngles) : Promise.resolve([]),
+      rows[0].templateKey
+        ? db.select().from(applicationTemplates).where(eq(applicationTemplates.legacyId, rows[0].templateKey))
+        : Promise.resolve([]),
+    ]);
+
+    let template: SchemeDetail['template'] = null;
+    if (templates.length > 0) {
+      try {
+        template = {
+          id: templates[0].id,
+          title: templates[0].title,
+          sections: JSON.parse(templates[0].sections) as Record<string, string>,
+        };
+      } catch {
+        template = null;
+      }
+    }
+
+    return {
+      data: {
+        scheme,
+        requirements: allDocuments
+          .filter(row => documentIds.has(row.id))
+          .map(row => ({ id: row.id, name: row.name, description: row.description, source: row.source }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'nb')),
+        angles: allAngles
+          .filter(row => angleIds.has(row.id))
+          .sort((a, b) => a.position - b.position)
+          .map(row => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            strength: row.strength as FundingAngle['strength'],
+            missing: row.missing,
+            sourceUrl: row.sourceUrl,
+            verifiedAt: row.verifiedAt,
+            projectIds: [],
+            visibility: row.visibility as FundingAngle['visibility'],
+            tags: row.tags,
+            provenance: row.provenance,
+          })),
+        template,
+      },
+      source: 'database',
+    };
+  } catch (error) {
+    return seeded(null, describe(error));
   }
 }
