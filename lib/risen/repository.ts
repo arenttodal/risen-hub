@@ -95,6 +95,7 @@ function toWorkItem(row: typeof workItems.$inferSelect): WorkItem {
     priority: row.priority as WorkItem['priority'],
     status: row.status as WorkItem['status'],
     assignee: row.assignee,
+    estimatedHours: row.estimatedHours,
     dueDate: row.dueDate,
     visibility: row.visibility as WorkItem['visibility'],
   };

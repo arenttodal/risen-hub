@@ -63,6 +63,8 @@ export interface WorkItem {
   priority: WorkPriority;
   status: WorkStatus;
   assignee: string | null;
+  /** Rough hours, used by the dugnad planner to fit work into a weekend. */
+  estimatedHours: number | null;
   dueDate: string | null;
   visibility: Visibility;
 }

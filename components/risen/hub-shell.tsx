@@ -2,13 +2,23 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Menu, Mountain, Search } from 'lucide-react';
+import { BookOpen, Menu, Mountain, Plus, Search } from 'lucide-react';
 import { activeHubItem, hubNav } from './hub-nav';
 import { JosefaProvider } from './josefa-context';
 import { Josefa } from './josefa';
+import { QuickCapture, type CaptureOption } from './quick-capture';
 
-export function HubShell({ children }: { children: ReactNode }) {
+export function HubShell({
+  children,
+  projects,
+  places,
+}: {
+  children: ReactNode;
+  projects: CaptureOption[];
+  places: CaptureOption[];
+}) {
   const [josefaOpen, setJosefaOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const pathname = usePathname() ?? '/hub';
   const active = activeHubItem(pathname);
@@ -18,6 +28,38 @@ export function HubShell({ children }: { children: ReactNode }) {
   useEffect(() => setMobileNav(false), [pathname]);
 
   const openJosefa = useCallback(() => setJosefaOpen(true), []);
+  const openCapture = useCallback(() => setCaptureOpen(true), []);
+
+  // Keyboard shortcuts from PLATFORM-SPEC.md section 8. They must never fire
+  // while someone is typing, so anything with a text entry focused is ignored.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable === true;
+
+      if (event.key === 'Escape') {
+        setCaptureOpen(false);
+        setJosefaOpen(false);
+        setMobileNav(false);
+        return;
+      }
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === 'n' || event.key === 'N') {
+        event.preventDefault();
+        setCaptureOpen(true);
+      }
+      if (event.key === 'j' || event.key === 'J') {
+        event.preventDefault();
+        setJosefaOpen(true);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   return (
     <JosefaProvider value={{ open: openJosefa }}>
@@ -79,6 +121,10 @@ export function HubShell({ children }: { children: ReactNode }) {
                 <Search size={17} />
                 Søk i Risen
               </button>
+              <button type="button" className="capture-button" onClick={openCapture}>
+                <Plus size={16} />
+                Ny sak
+              </button>
               <button type="button" className="josefa-button" onClick={openJosefa}>
                 <BookOpen size={16} />
                 Josefa
@@ -88,6 +134,12 @@ export function HubShell({ children }: { children: ReactNode }) {
           {children}
         </main>
         <Josefa open={josefaOpen} onClose={() => setJosefaOpen(false)} />
+        <QuickCapture
+          open={captureOpen}
+          onClose={() => setCaptureOpen(false)}
+          projects={projects}
+          places={places}
+        />
       </div>
     </JosefaProvider>
   );
