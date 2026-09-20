@@ -100,3 +100,36 @@ describe('seed visibility', () => {
     }
   });
 });
+
+describe('funding integrity', () => {
+  it('never marks a scheme verified without a source and a date (CLAUDE.md rule 8)', async () => {
+    const { seedFundingSchemes } = await import('../data/risen.ts');
+    for (const scheme of seedFundingSchemes) {
+      if (scheme.status === 'verified') {
+        assert.ok(scheme.sourceUrl, `${scheme.id} is verified without a sourceUrl`);
+        assert.ok(scheme.verifiedAt, `${scheme.id} is verified without a verifiedAt`);
+      }
+    }
+  });
+
+  it('points every funding angle at projects that exist', async () => {
+    const { seedFundingAngles } = await import('../data/risen.ts');
+    for (const angle of seedFundingAngles) {
+      for (const projectId of angle.projectIds) {
+        assert.ok(projectIds.has(projectId), `${angle.id} -> ${projectId}`);
+      }
+    }
+  });
+
+  it('points every event at a project that exists', async () => {
+    const { seedEvents } = await import('../data/risen.ts');
+    for (const event of seedEvents) {
+      if (event.projectId !== null) {
+        assert.ok(projectIds.has(event.projectId), `${event.id} -> ${event.projectId}`);
+      }
+      if (event.placeId !== null) {
+        assert.ok(placeIds.has(event.placeId), `${event.id} -> ${event.placeId}`);
+      }
+    }
+  });
+});

@@ -1,9 +1,42 @@
-import { asc, eq, or } from 'drizzle-orm';
+import { asc, count, eq, or } from 'drizzle-orm';
 import { tryGetDb } from '@/db';
-import { milestones, places, projects, workItems } from '@/db/schema';
-import { seedMilestones, seedPlaces, seedProjects, seedWorkItems } from '@/data/risen';
+import {
+  events,
+  fundingAngleProjects,
+  fundingAngles,
+  fundingSchemes,
+  members,
+  milestones,
+  places,
+  projects,
+  proposals,
+  rsvps,
+  workItems,
+} from '@/db/schema';
+import {
+  seedEvents,
+  seedFundingAngles,
+  seedFundingSchemes,
+  seedMembers,
+  seedMilestones,
+  seedPlaces,
+  seedProjects,
+  seedProposals,
+  seedWorkItems,
+} from '@/data/risen';
 import { byPriority } from './types';
-import type { Loaded, Milestone, Place, Project, WorkItem } from './types';
+import type {
+  FundingAngle,
+  FundingScheme,
+  Loaded,
+  Member,
+  Milestone,
+  Place,
+  Project,
+  Proposal,
+  RisenEvent,
+  WorkItem,
+} from './types';
 
 /**
  * The only read path for core Risen records.
@@ -159,5 +192,145 @@ export async function listPlaces(): Promise<Loaded<Place[]>> {
     return { data: rows.map(toPlace), source: 'database' };
   } catch (error) {
     return seeded(seedPlaces, describe(error));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Funding, events and community
+// ---------------------------------------------------------------------------
+
+function toScheme(row: typeof fundingSchemes.$inferSelect): FundingScheme {
+  return {
+    id: row.id,
+    name: row.name,
+    provider: row.provider,
+    sourceUrl: row.sourceUrl,
+    eligibilitySummary: row.eligibilitySummary,
+    deadlineAt: row.deadlineAt,
+    verifiedAt: row.verifiedAt,
+    status: row.status as FundingScheme['status'],
+    projectId: row.projectId,
+    visibility: row.visibility as FundingScheme['visibility'],
+  };
+}
+
+/** Deadlines first, undated schemes last. */
+const bySchemeDeadline = (a: FundingScheme, b: FundingScheme) =>
+  (a.deadlineAt ?? '9999').localeCompare(b.deadlineAt ?? '9999');
+
+export async function listFundingSchemes(): Promise<Loaded<FundingScheme[]>> {
+  const db = tryGetDb();
+  if (!db) return seeded(seedFundingSchemes.slice().sort(bySchemeDeadline));
+  try {
+    const rows = await db.select().from(fundingSchemes);
+    return { data: rows.map(toScheme).sort(bySchemeDeadline), source: 'database' };
+  } catch (error) {
+    return seeded(seedFundingSchemes.slice().sort(bySchemeDeadline), describe(error));
+  }
+}
+
+export async function listFundingAngles(): Promise<Loaded<FundingAngle[]>> {
+  const db = tryGetDb();
+  if (!db) return seeded(seedFundingAngles);
+  try {
+    const [rows, links] = await Promise.all([
+      db.select().from(fundingAngles).orderBy(asc(fundingAngles.id)),
+      db.select().from(fundingAngleProjects),
+    ]);
+    const data = rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      strength: row.strength as FundingAngle['strength'],
+      missing: row.missing,
+      sourceUrl: row.sourceUrl,
+      verifiedAt: row.verifiedAt,
+      projectIds: links.filter(link => link.angleId === row.id).map(link => link.projectId),
+      visibility: row.visibility as FundingAngle['visibility'],
+    }));
+    return { data, source: 'database' };
+  } catch (error) {
+    return seeded(seedFundingAngles, describe(error));
+  }
+}
+
+/**
+ * Events, with sign-up counts joined from `rsvps`. The public preview sign-up
+ * still owns those rows, so the count is read rather than duplicated here.
+ */
+export async function listEvents(): Promise<Loaded<RisenEvent[]>> {
+  const byDate = (a: RisenEvent, b: RisenEvent) =>
+    (a.startsAt ?? '9999').localeCompare(b.startsAt ?? '9999');
+  const db = tryGetDb();
+  if (!db) return seeded(seedEvents.slice().sort(byDate));
+  try {
+    const [rows, signups] = await Promise.all([
+      db.select().from(events),
+      db.select({ camp: rsvps.camp, count: count() }).from(rsvps).groupBy(rsvps.camp),
+    ]);
+    const data = rows
+      .map(row => ({
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        description: row.description,
+        rsvpKey: row.rsvpKey,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+        capacity: row.capacity,
+        projectId: row.projectId,
+        placeId: row.placeId,
+        visibility: row.visibility as RisenEvent['visibility'],
+        publicationStatus: row.publicationStatus as RisenEvent['publicationStatus'],
+        signups: signups.find(entry => entry.camp === row.rsvpKey)?.count ?? 0,
+      }))
+      .sort(byDate);
+    return { data, source: 'database' };
+  } catch (error) {
+    return seeded(seedEvents.slice().sort(byDate), describe(error));
+  }
+}
+
+export async function listMembers(): Promise<Loaded<Member[]>> {
+  const db = tryGetDb();
+  if (!db) return seeded(seedMembers);
+  try {
+    const rows = await db.select().from(members).orderBy(asc(members.name));
+    return {
+      data: rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        role: row.role as Member['role'],
+        status: row.status,
+      })),
+      source: 'database',
+    };
+  } catch (error) {
+    return seeded(seedMembers, describe(error));
+  }
+}
+
+export async function listProposals(): Promise<Loaded<Proposal[]>> {
+  const db = tryGetDb();
+  if (!db) return seeded(seedProposals);
+  try {
+    const rows = await db.select().from(proposals).orderBy(asc(proposals.createdAt));
+    return {
+      data: rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        body: row.body,
+        status: row.status as Proposal['status'],
+        closesAt: row.closesAt,
+        decidedAt: row.decidedAt,
+        outcome: row.outcome,
+        projectId: row.projectId,
+        visibility: row.visibility as Proposal['visibility'],
+      })),
+      source: 'database',
+    };
+  } catch (error) {
+    return seeded(seedProposals, describe(error));
   }
 }

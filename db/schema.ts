@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /**
  * Risen core schema.
@@ -171,6 +171,137 @@ export const activityLog = sqliteTable(
   ],
 );
 
+/**
+ * Funding schemes. CLAUDE.md rule 8: a deadline or eligibility claim may only
+ * be presented as current when it carries a source and a verification date.
+ * `status` starts as `unverified` and nothing may show it as live until a
+ * person has checked the scheme's own pages and filled in `sourceUrl` and
+ * `verifiedAt`.
+ */
+export const fundingSchemes = sqliteTable(
+  'funding_schemes',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    provider: text('provider'),
+    /** The scheme's own page. Required before `status` may leave `unverified`. */
+    sourceUrl: text('source_url'),
+    eligibilitySummary: text('eligibility_summary'),
+    /** ISO date of the next deadline, as researched. Meaningless without `verifiedAt`. */
+    deadlineAt: text('deadline_at'),
+    deadlineRule: text('deadline_rule'),
+    /** When a person last checked this against the source. */
+    verifiedAt: text('verified_at'),
+    /** `unverified | verified | passed | closed` */
+    status: text('status').notNull().default('unverified'),
+    projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    visibility: visibility(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [index('funding_schemes_status').on(table.status), index('funding_schemes_deadline').on(table.deadlineAt)],
+);
+
+/** The idea bank. Classification follows PLATFORM-SPEC.md section 6. */
+export const fundingAngles = sqliteTable(
+  'funding_angles',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    description: text('description'),
+    /** `core | strong | context | weak | ineligible | needs_verification` */
+    strength: text('strength').notNull().default('needs_verification'),
+    /** What is still missing before this can be used in an application. */
+    missing: text('missing'),
+    sourceUrl: text('source_url'),
+    verifiedAt: text('verified_at'),
+    visibility: visibility(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [index('funding_angles_strength').on(table.strength)],
+);
+
+/** An angle may argue for several projects; a project may be argued many ways. */
+export const fundingAngleProjects = sqliteTable(
+  'funding_angle_projects',
+  {
+    angleId: text('angle_id')
+      .notNull()
+      .references(() => fundingAngles.id, { onDelete: 'cascade' }),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+  },
+  table => [primaryKey({ columns: [table.angleId, table.projectId] })],
+);
+
+/** Festival, dugnad weekends and gatherings. Public sign-up still lives in `rsvps`. */
+export const events = sqliteTable(
+  'events',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    description: text('description'),
+    /** Matches `rsvps.camp` while the public preview sign-up is still separate. */
+    rsvpKey: text('rsvp_key'),
+    startsAt: text('starts_at'),
+    endsAt: text('ends_at'),
+    capacity: integer('capacity'),
+    projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    placeId: text('place_id').references(() => places.id, { onDelete: 'set null' }),
+    visibility: visibility(),
+    /** `draft | review | published | archived` */
+    publicationStatus: text('publication_status').notNull().default('draft'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [uniqueIndex('events_slug').on(table.slug), index('events_starts').on(table.startsAt)],
+);
+
+/**
+ * Association members. Deliberately empty until authentication exists —
+ * CLAUDE.md rule 5 keeps the role field ready, and no real personal data may be
+ * entered before there is authorization to protect it.
+ */
+export const members = sqliteTable(
+  'members',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    email: text('email'),
+    /** `admin | member | volunteer` */
+    role: text('role').notNull().default('member'),
+    /** `active | invited | inactive` */
+    status: text('status').notNull().default('active'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [index('members_role').on(table.role)],
+);
+
+/** Proposals the association votes on, and the decisions they become. */
+export const proposals = sqliteTable(
+  'proposals',
+  {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    body: text('body'),
+    /** `draft | open | decided | withdrawn` */
+    status: text('status').notNull().default('draft'),
+    createdBy: text('created_by').references(() => members.id, { onDelete: 'set null' }),
+    closesAt: text('closes_at'),
+    decidedAt: text('decided_at'),
+    outcome: text('outcome'),
+    projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    visibility: visibility(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [index('proposals_status').on(table.status)],
+);
+
 /** Public preview RSVPs for the sample dugnad weekends on `/`. */
 export const rsvps = sqliteTable(
   'rsvps',
@@ -189,3 +320,8 @@ export type Project = typeof projects.$inferSelect;
 export type Milestone = typeof milestones.$inferSelect;
 export type WorkItem = typeof workItems.$inferSelect;
 export type ActivityEntry = typeof activityLog.$inferSelect;
+export type FundingScheme = typeof fundingSchemes.$inferSelect;
+export type FundingAngle = typeof fundingAngles.$inferSelect;
+export type RisenEvent = typeof events.$inferSelect;
+export type Member = typeof members.$inferSelect;
+export type Proposal = typeof proposals.$inferSelect;

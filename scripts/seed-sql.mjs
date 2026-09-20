@@ -27,7 +27,15 @@ const insert = (table, columns, rows) =>
     .join('\n');
 
 export async function buildSeedSql(timestamp = new Date().toISOString()) {
-  const { seedPlaces, seedProjects, seedMilestones, seedWorkItems } = await import('../data/risen.ts');
+  const {
+    seedPlaces,
+    seedProjects,
+    seedMilestones,
+    seedWorkItems,
+    seedFundingSchemes,
+    seedFundingAngles,
+    seedEvents,
+  } = await import('../data/risen.ts');
   const stamped = rows => rows.map(row => ({ ...row, created_at: timestamp, updated_at: timestamp }));
 
   return [
@@ -67,6 +75,47 @@ export async function buildSeedSql(timestamp = new Date().toISOString()) {
         place_id: item.placeId,
         milestone_id: item.milestoneId,
         due_date: item.dueDate,
+      })),
+    ),
+    insert(
+      'funding_schemes',
+      ['id', 'name', 'provider', 'source_url', 'eligibility_summary', 'deadline_at', 'verified_at', 'status', 'project_id', 'visibility', 'created_at', 'updated_at'],
+      stamped(seedFundingSchemes).map(scheme => ({
+        ...scheme,
+        source_url: scheme.sourceUrl,
+        eligibility_summary: scheme.eligibilitySummary,
+        deadline_at: scheme.deadlineAt,
+        verified_at: scheme.verifiedAt,
+        project_id: scheme.projectId,
+      })),
+    ),
+    insert(
+      'funding_angles',
+      ['id', 'title', 'description', 'strength', 'missing', 'source_url', 'verified_at', 'visibility', 'created_at', 'updated_at'],
+      stamped(seedFundingAngles).map(angle => ({
+        ...angle,
+        source_url: angle.sourceUrl,
+        verified_at: angle.verifiedAt,
+      })),
+    ),
+    insert(
+      'funding_angle_projects',
+      ['angle_id', 'project_id'],
+      seedFundingAngles.flatMap(angle =>
+        angle.projectIds.map(projectId => ({ angle_id: angle.id, project_id: projectId })),
+      ),
+    ),
+    insert(
+      'events',
+      ['id', 'slug', 'title', 'description', 'rsvp_key', 'starts_at', 'ends_at', 'capacity', 'project_id', 'place_id', 'visibility', 'publication_status', 'created_at', 'updated_at'],
+      stamped(seedEvents).map(event => ({
+        ...event,
+        rsvp_key: event.rsvpKey,
+        starts_at: event.startsAt,
+        ends_at: event.endsAt,
+        project_id: event.projectId,
+        place_id: event.placeId,
+        publication_status: event.publicationStatus,
       })),
     ),
   ].join('\n\n');
