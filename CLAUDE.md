@@ -36,5 +36,5 @@ Risen is one platform, not a bundle of separate apps. A project such as `Låven`
 - tests cover domain rules and critical actions
 - `npm run build` passes
 
-See `docs/PLATFORM-SPEC.md` for the complete plan.
-See `docs/CLAUDE-HANDOFF.md` for the current design system, implementation order, acceptance criteria and seamless takeover brief.
+See `PLATFORM-SPEC.md` for the complete plan.
+See `CLAUDE-HANDOFF.md` for the current design system, implementation order, acceptance criteria and seamless takeover brief.

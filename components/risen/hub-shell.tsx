@@ -2,13 +2,13 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, Menu, Mountain, Search } from 'lucide-react';
+import { BookOpen, Menu, Mountain, Search } from 'lucide-react';
 import { activeHubItem, hubNav } from './hub-nav';
-import { AssistantProvider } from './assistant-context';
-import { RisenAssistant } from './assistant';
+import { JosefaProvider } from './josefa-context';
+import { Josefa } from './josefa';
 
 export function HubShell({ children }: { children: ReactNode }) {
-  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [josefaOpen, setJosefaOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const pathname = usePathname() ?? '/hub';
   const active = activeHubItem(pathname);
@@ -17,10 +17,10 @@ export function HubShell({ children }: { children: ReactNode }) {
   // has to be closed explicitly whenever the route changes.
   useEffect(() => setMobileNav(false), [pathname]);
 
-  const openAssistant = useCallback(() => setAssistantOpen(true), []);
+  const openJosefa = useCallback(() => setJosefaOpen(true), []);
 
   return (
-    <AssistantProvider value={{ open: openAssistant }}>
+    <JosefaProvider value={{ open: openJosefa }}>
       <div className="hub-app">
         <button
           type="button"
@@ -79,16 +79,16 @@ export function HubShell({ children }: { children: ReactNode }) {
                 <Search size={17} />
                 Søk i Risen
               </button>
-              <button type="button" className="assistant-button" onClick={openAssistant}>
-                <Bot size={17} />
-                Assistant
+              <button type="button" className="josefa-button" onClick={openJosefa}>
+                <BookOpen size={16} />
+                Josefa
               </button>
             </div>
           </header>
           {children}
         </main>
-        <RisenAssistant open={assistantOpen} onClose={() => setAssistantOpen(false)} />
+        <Josefa open={josefaOpen} onClose={() => setJosefaOpen(false)} />
       </div>
-    </AssistantProvider>
+    </JosefaProvider>
   );
 }

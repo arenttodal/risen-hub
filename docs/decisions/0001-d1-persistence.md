@@ -6,7 +6,7 @@
 
 ## Context
 
-`docs/PLATFORM-SPEC.md` section 4 leaves the persistence choice open between
+`PLATFORM-SPEC.md` section 4 leaves the persistence choice open between
 Cloudflare D1 and Postgres/Supabase, and instructs us not to pick Supabase
 merely for login.
 

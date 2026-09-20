@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, or } from 'drizzle-orm';
 import { tryGetDb } from '@/db';
 import { milestones, places, projects, workItems } from '@/db/schema';
 import { seedMilestones, seedPlaces, seedProjects, seedWorkItems } from '@/data/risen';
@@ -93,14 +93,25 @@ export async function listProjects(): Promise<Loaded<Project[]>> {
   }
 }
 
-export async function getProjectBySlug(slug: string): Promise<Loaded<Project | null>> {
+/**
+ * Internal routes address a project by id (PLATFORM-SPEC.md section 8); the
+ * slug is reserved for the public routes. Both are accepted here so a public
+ * slug can be resolved without a second query.
+ */
+export async function getProject(idOrSlug: string): Promise<Loaded<Project | null>> {
+  const fromSeed = () =>
+    seedProjects.find(project => project.id === idOrSlug || project.slug === idOrSlug) ?? null;
   const db = tryGetDb();
-  if (!db) return seeded(seedProjects.find(project => project.slug === slug) ?? null);
+  if (!db) return seeded(fromSeed());
   try {
-    const rows = await db.select().from(projects).where(eq(projects.slug, slug)).limit(1);
+    const rows = await db
+      .select()
+      .from(projects)
+      .where(or(eq(projects.id, idOrSlug), eq(projects.slug, idOrSlug)))
+      .limit(1);
     return { data: rows.length > 0 ? toProject(rows[0]) : null, source: 'database' };
   } catch (error) {
-    return seeded(seedProjects.find(project => project.slug === slug) ?? null, describe(error));
+    return seeded(fromSeed(), describe(error));
   }
 }
 

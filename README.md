@@ -46,5 +46,5 @@ npm run build
 
 All dates, budgets, progress and funding numbers in `data/risen.ts` are
 illustrative seed data. Do not expose API keys in client code. Read
-`CLAUDE.md`, `docs/CLAUDE-HANDOFF.md` and `docs/PLATFORM-SPEC.md` before
+`CLAUDE.md`, `CLAUDE-HANDOFF.md` and `PLATFORM-SPEC.md` before
 extending the product.
