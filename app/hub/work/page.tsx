@@ -14,23 +14,28 @@ const typeLabels: Record<WorkItem['type'], string> = {
   repair: 'Reparasjon',
   purchase: 'Innkjøp',
   dugnad: 'Dugnad',
+  inspection: 'Befaring',
+  documentation: 'Dokumentasjon',
+  decision: 'Beslutning',
 };
 
 const statusLabels: Record<WorkItem['status'], string> = {
   inbox: 'Innboks',
+  planned: 'Planlagt',
   ready: 'Klar',
-  doing: 'Pågår',
+  in_progress: 'Pågår',
   blocked: 'Blokkert',
   done: 'Ferdig',
+  cancelled: 'Avlyst',
 };
 
 /** The saved views from PLATFORM-SPEC.md section 7. */
 const views: { key: string; label: string; describe: string; match: (item: WorkItem) => boolean }[] = [
   { key: 'inbox', label: 'Innboks', describe: 'Fanget opp, ikke plassert ennå', match: item => item.status === 'inbox' },
   { key: 'ready', label: 'Klar nå', describe: 'Kan tas tak i med en gang', match: item => item.status === 'ready' },
-  { key: 'doing', label: 'Pågår', describe: 'Noen har begynt', match: item => item.status === 'doing' },
+  { key: 'in_progress', label: 'Pågår', describe: 'Noen har begynt', match: item => item.status === 'in_progress' },
   { key: 'attention', label: 'Trenger oppfølging', describe: 'Blokkert eller haster', match: item => item.status === 'blocked' || item.priority === 'urgent' },
-  { key: 'dugnad', label: 'Neste dugnad', describe: 'Egnet for en arbeidshelg', match: item => item.type === 'dugnad' || (item.status === 'ready' && item.assignee === null) },
+  { key: 'dugnad', label: 'Neste dugnad', describe: 'Egnet for en arbeidshelg', match: item => item.suitableForDugnad || item.type === 'dugnad' },
   { key: 'purchase', label: 'Innkjøp', describe: 'Må kjøpes inn', match: item => item.type === 'purchase' },
 ];
 

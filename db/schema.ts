@@ -116,19 +116,36 @@ export const workItems = sqliteTable(
     projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
     placeId: text('place_id').references(() => places.id, { onDelete: 'set null' }),
     milestoneId: text('milestone_id').references(() => milestones.id, { onDelete: 'set null' }),
+    /**
+     * Subtasks are work items too, so a subtask can carry its own status,
+     * assignee and deadline without a second model. Cycles are rejected in the
+     * service layer, which SQLite cannot express as a constraint.
+     */
+    parentId: text('parent_id'),
     title: text('title').notNull(),
     detail: text('detail'),
-    /** `task | repair | purchase | dugnad` */
+    /** `task | repair | purchase | dugnad | inspection | documentation | decision` */
     type: text('type').notNull().default('task'),
     /** `urgent | high | normal | low` */
     priority: text('priority').notNull().default('normal'),
-    /** `inbox | ready | doing | blocked | done` */
+    /** `inbox | planned | ready | in_progress | blocked | done | cancelled` */
     status: text('status').notNull().default('inbox'),
     /** Free text until Community owns a member register. */
     assignee: text('assignee'),
+    /** Whole hours. The unit the farm actually plans in. */
     estimatedHours: integer('estimated_hours'),
+    /** How many people the job needs at once. */
+    requiredPeople: integer('required_people'),
+    /** 0/1. Whether this is sensible work for a volunteer weekend. */
+    suitableForDugnad: integer('suitable_for_dugnad').notNull().default(0),
+    /** `any | dry | indoor | frost_free` — filters the planner when rain is forecast. */
+    weatherDependency: text('weather_dependency'),
+    startAt: text('start_at'),
     dueDate: text('due_date'),
     completedAt: text('completed_at'),
+    /** Manual ordering inside a list or board column. */
+    position: integer('position').notNull().default(0),
+    createdBy: text('created_by'),
     visibility: visibility(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -137,6 +154,9 @@ export const workItems = sqliteTable(
     index('work_items_project').on(table.projectId),
     index('work_items_status').on(table.status, table.priority),
     index('work_items_place').on(table.placeId),
+    index('work_items_parent').on(table.parentId),
+    index('work_items_assignee').on(table.assignee),
+    index('work_items_due').on(table.dueDate),
   ],
 );
 
@@ -302,6 +322,115 @@ export const proposals = sqliteTable(
   table => [index('proposals_status').on(table.status)],
 );
 
+/**
+ * Comments on a work item. Separate from `activity_log`: a comment is something
+ * a person chose to write, an activity entry is something the system observed.
+ * Deletes are soft so a thread keeps its shape.
+ */
+export const workItemComments = sqliteTable(
+  'work_item_comments',
+  {
+    id: text('id').primaryKey(),
+    workItemId: text('work_item_id')
+      .notNull()
+      .references(() => workItems.id, { onDelete: 'cascade' }),
+    /** Null until authentication exists; `authorName` carries it meanwhile. */
+    authorUserId: text('author_user_id'),
+    authorName: text('author_name'),
+    body: text('body').notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+    deletedAt: text('deleted_at'),
+  },
+  table => [index('comments_work_item').on(table.workItemId, table.createdAt)],
+);
+
+/** Labels use design tokens rather than free hex, so they stay inside the palette. */
+export const labels = sqliteTable(
+  'labels',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    /** A token name such as `accent` or `warn`, resolved in CSS. */
+    colorToken: text('color_token'),
+    createdAt: createdAt(),
+  },
+  table => [uniqueIndex('labels_name').on(table.name)],
+);
+
+export const workItemLabels = sqliteTable(
+  'work_item_labels',
+  {
+    workItemId: text('work_item_id')
+      .notNull()
+      .references(() => workItems.id, { onDelete: 'cascade' }),
+    labelId: text('label_id')
+      .notNull()
+      .references(() => labels.id, { onDelete: 'cascade' }),
+  },
+  table => [primaryKey({ columns: [table.workItemId, table.labelId] })],
+);
+
+/** A named list of things to buy, owned by a project and optionally by a task. */
+export const shoppingLists = sqliteTable(
+  'shopping_lists',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    workItemId: text('work_item_id').references(() => workItems.id, { onDelete: 'set null' }),
+    name: text('name').notNull(),
+    /** `open | ordered | complete | cancelled` */
+    status: text('status').notNull().default('open'),
+    createdBy: text('created_by'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [index('shopping_lists_project').on(table.projectId)],
+);
+
+/**
+ * One product on a list.
+ *
+ * Money is stored as whole øre in integers. Floating point cannot represent
+ * 289.90 exactly, and a budget that drifts by rounding is worse than no budget,
+ * so nothing here is ever a float. Quantity is scaled by 1000 for the same
+ * reason: 2.5 sacks is stored as 2500.
+ */
+export const shoppingItems = sqliteTable(
+  'shopping_items',
+  {
+    id: text('id').primaryKey(),
+    shoppingListId: text('shopping_list_id')
+      .notNull()
+      .references(() => shoppingLists.id, { onDelete: 'cascade' }),
+    /** Optional link to a budget line, so a cost is not counted twice. */
+    budgetLineId: text('budget_line_id'),
+    name: text('name').notNull(),
+    description: text('description'),
+    category: text('category'),
+    /** Quantity × 1000. 8 sacks is 8000; 2.5 metres is 2500. */
+    quantityMilli: integer('quantity_milli').notNull().default(1000),
+    unit: text('unit').notNull().default('stk'),
+    estimatedUnitPriceOre: integer('estimated_unit_price_ore'),
+    actualUnitPriceOre: integer('actual_unit_price_ore'),
+    supplier: text('supplier'),
+    productUrl: text('product_url'),
+    /** `planned | needs_decision | ready | purchased | cancelled` */
+    status: text('status').notNull().default('planned'),
+    purchasedAt: text('purchased_at'),
+    purchasedBy: text('purchased_by'),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [
+    index('shopping_items_list').on(table.shoppingListId, table.position),
+    index('shopping_items_status').on(table.status),
+  ],
+);
+
 /** Public preview RSVPs for the sample dugnad weekends on `/`. */
 export const rsvps = sqliteTable(
   'rsvps',
@@ -325,3 +454,7 @@ export type FundingAngle = typeof fundingAngles.$inferSelect;
 export type RisenEvent = typeof events.$inferSelect;
 export type Member = typeof members.$inferSelect;
 export type Proposal = typeof proposals.$inferSelect;
+export type WorkItemComment = typeof workItemComments.$inferSelect;
+export type Label = typeof labels.$inferSelect;
+export type ShoppingList = typeof shoppingLists.$inferSelect;
+export type ShoppingItem = typeof shoppingItems.$inferSelect;

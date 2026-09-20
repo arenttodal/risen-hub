@@ -30,10 +30,11 @@ describe('fundedShare', () => {
 
 describe('isOpenWork', () => {
   it('treats every status except done as open', () => {
-    for (const status of ['inbox', 'ready', 'doing', 'blocked'] as const) {
+    for (const status of ['inbox', 'planned', 'ready', 'in_progress', 'blocked'] as const) {
       assert.equal(isOpenWork({ status }), true, `${status} should count as open`);
     }
     assert.equal(isOpenWork({ status: 'done' }), false);
+    assert.equal(isOpenWork({ status: 'cancelled' }), false, 'cancelled closes an item too');
   });
 });
 

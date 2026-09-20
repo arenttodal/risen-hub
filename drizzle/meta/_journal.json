@@ -22,6 +22,13 @@
       "when": 1789933275428,
       "tag": "0002_petite_scorpion",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789937728591,
+      "tag": "0003_amused_hellcat",
+      "breakpoints": true
     }
   ]
 }

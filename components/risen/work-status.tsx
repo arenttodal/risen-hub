@@ -13,10 +13,12 @@ import type { WorkItem } from '@/lib/risen/types';
 
 const statuses: { value: WorkItem['status']; label: string }[] = [
   { value: 'inbox', label: 'Innboks' },
+  { value: 'planned', label: 'Planlagt' },
   { value: 'ready', label: 'Klar' },
-  { value: 'doing', label: 'Pågår' },
+  { value: 'in_progress', label: 'Pågår' },
   { value: 'blocked', label: 'Blokkert' },
   { value: 'done', label: 'Ferdig' },
+  { value: 'cancelled', label: 'Avlyst' },
 ];
 
 export function WorkStatusControl({ id, status, title }: { id: string; status: WorkItem['status']; title: string }) {

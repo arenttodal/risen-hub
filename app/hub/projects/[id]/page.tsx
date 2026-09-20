@@ -30,14 +30,19 @@ const workTypeLabels: Record<WorkItem['type'], string> = {
   repair: 'Reparasjon',
   purchase: 'Innkjøp',
   dugnad: 'Dugnad',
+  inspection: 'Befaring',
+  documentation: 'Dokumentasjon',
+  decision: 'Beslutning',
 };
 
 const workStatusLabels: Record<WorkItem['status'], string> = {
   inbox: 'Innboks',
+  planned: 'Planlagt',
   ready: 'Klar',
-  doing: 'Pågår',
+  in_progress: 'Pågår',
   blocked: 'Blokkert',
   done: 'Ferdig',
+  cancelled: 'Avlyst',
 };
 
 function MilestoneIcon({ status }: { status: Milestone['status'] }) {

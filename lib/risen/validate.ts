@@ -12,9 +12,9 @@ import type { WorkItem } from './types';
 
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 
-const WORK_TYPES = ['task', 'repair', 'purchase', 'dugnad'] as const;
+const WORK_TYPES = ['task', 'repair', 'purchase', 'dugnad', 'inspection', 'documentation', 'decision'] as const;
 const WORK_PRIORITIES = ['urgent', 'high', 'normal', 'low'] as const;
-const WORK_STATUSES = ['inbox', 'ready', 'doing', 'blocked', 'done'] as const;
+const WORK_STATUSES = ['inbox', 'planned', 'ready', 'in_progress', 'blocked', 'done', 'cancelled'] as const;
 const VISIBILITIES = ['private', 'members', 'public'] as const;
 const PROJECT_STATUSES = ['active', 'planning', 'paused', 'complete'] as const;
 

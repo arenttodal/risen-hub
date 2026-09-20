@@ -19,6 +19,9 @@ const typeLabels: Record<WorkItem['type'], string> = {
   repair: 'Reparasjon',
   purchase: 'Innkjøp',
   dugnad: 'Dugnad',
+  inspection: 'Befaring',
+  documentation: 'Dokumentasjon',
+  decision: 'Beslutning',
 };
 
 export async function createWorkItem(input: NewWorkItem): Promise<{ id: string }> {
@@ -91,4 +94,73 @@ export async function updateWorkItem(id: string, patch: WorkItemPatch): Promise<
   });
 
   return true;
+}
+
+/**
+ * Walks up the parent chain to see whether making `childId` a child of
+ * `parentId` would close a loop.
+ *
+ * SQLite cannot express this as a constraint, and a cycle here is not a
+ * cosmetic problem: any recursive read of the tree would never terminate. The
+ * walk is bounded as a second line of defence, in case data already on disk is
+ * cyclic.
+ */
+export async function wouldCreateCycle(childId: string, parentId: string): Promise<boolean> {
+  if (childId === parentId) return true;
+  const db = getDb();
+  const seen = new Set<string>([childId]);
+  let current: string | null = parentId;
+
+  for (let depth = 0; current !== null && depth < 64; depth += 1) {
+    if (seen.has(current)) return true;
+    seen.add(current);
+    const rows: { parentId: string | null }[] = await db
+      .select({ parentId: workItems.parentId })
+      .from(workItems)
+      .where(eq(workItems.id, current))
+      .limit(1);
+    if (rows.length === 0) return false;
+    current = rows[0].parentId;
+  }
+  // Hit the depth bound without resolving: treat as cyclic rather than risk it.
+  return current !== null;
+}
+
+export type SubtaskResult =
+  | { ok: true; id: string }
+  | { ok: false; reason: 'parent_not_found' | 'cycle' };
+
+export async function createSubtask(parentId: string, input: NewWorkItem): Promise<SubtaskResult> {
+  const db = getDb();
+  const parent = await db.select().from(workItems).where(eq(workItems.id, parentId)).limit(1);
+  if (parent.length === 0) return { ok: false, reason: 'parent_not_found' };
+
+  const { id } = await createWorkItem({
+    ...input,
+    // A subtask belongs to the same project as its parent unless told otherwise.
+    projectId: input.projectId ?? parent[0].projectId,
+    placeId: input.placeId ?? parent[0].placeId,
+  });
+
+  if (await wouldCreateCycle(id, parentId)) {
+    await db.delete(workItems).where(eq(workItems.id, id));
+    return { ok: false, reason: 'cycle' };
+  }
+
+  await db.update(workItems).set({ parentId, updatedAt: new Date().toISOString() }).where(eq(workItems.id, id));
+  await recordActivity({
+    entityType: 'work_item',
+    entityId: parentId,
+    action: 'updated',
+    summary: `Underoppgave lagt til: ${input.title}`,
+    metadata: { subtaskId: id },
+  });
+
+  return { ok: true, id };
+}
+
+export async function listSubtasks(parentId: string) {
+  const db = getDb();
+  const rows = await db.select().from(workItems).where(eq(workItems.parentId, parentId));
+  return rows.sort((a, b) => a.position - b.position);
 }

@@ -96,7 +96,14 @@ function toWorkItem(row: typeof workItems.$inferSelect): WorkItem {
     status: row.status as WorkItem['status'],
     assignee: row.assignee,
     estimatedHours: row.estimatedHours,
+    requiredPeople: row.requiredPeople,
+    // SQLite has no boolean; 0/1 is narrowed here rather than leaking outward.
+    suitableForDugnad: row.suitableForDugnad === 1,
+    weatherDependency: row.weatherDependency as WorkItem['weatherDependency'],
+    parentId: row.parentId,
+    startAt: row.startAt,
     dueDate: row.dueDate,
+    position: row.position,
     visibility: row.visibility as WorkItem['visibility'],
   };
 }
