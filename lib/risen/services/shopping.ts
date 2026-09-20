@@ -147,3 +147,64 @@ export async function createShoppingItem(listId: string, input: NewShoppingItem)
   });
   return { id };
 }
+
+export async function updateShoppingItem(
+  id: string,
+  patch: {
+    status?: PricedItem['status'];
+    actualUnitPriceOre?: number | null;
+    estimatedUnitPriceOre?: number | null;
+    quantityMilli?: number;
+    name?: string;
+  },
+): Promise<boolean> {
+  const db = getDb();
+  const rows = await db.select().from(shoppingItems).where(eq(shoppingItems.id, id)).limit(1);
+  if (rows.length === 0) return false;
+  const before = rows[0];
+
+  const now = new Date().toISOString();
+  const changes: Partial<typeof shoppingItems.$inferInsert> = { updatedAt: now };
+  if (patch.status !== undefined) {
+    changes.status = patch.status;
+    // Purchase time follows the status rather than being trusted from input.
+    changes.purchasedAt = patch.status === 'purchased' ? (before.purchasedAt ?? now) : null;
+  }
+  if (patch.actualUnitPriceOre !== undefined) changes.actualUnitPriceOre = patch.actualUnitPriceOre;
+  if (patch.estimatedUnitPriceOre !== undefined) changes.estimatedUnitPriceOre = patch.estimatedUnitPriceOre;
+  if (patch.quantityMilli !== undefined) changes.quantityMilli = patch.quantityMilli;
+  if (patch.name !== undefined) changes.name = patch.name;
+
+  await db.update(shoppingItems).set(changes).where(eq(shoppingItems.id, id));
+
+  await recordActivity({
+    entityType: 'work_item',
+    entityId: before.shoppingListId,
+    action: patch.status !== undefined ? 'status_changed' : 'updated',
+    summary:
+      patch.status === 'purchased'
+        ? `${before.name} kjøpt`
+        : `${before.name} oppdatert`,
+    metadata: {
+      shoppingItemId: id,
+      before: {
+        status: before.status,
+        actualUnitPriceOre: before.actualUnitPriceOre,
+        quantityMilli: before.quantityMilli,
+      },
+      after: patch,
+    },
+  });
+  return true;
+}
+
+/**
+ * Cancels rather than deletes.
+ *
+ * A cancelled line is excluded from every total but stays visible, so the
+ * decision not to buy something is recorded instead of vanishing. Hard deletes
+ * would take the history with them.
+ */
+export async function cancelShoppingItem(id: string): Promise<boolean> {
+  return updateShoppingItem(id, { status: 'cancelled' });
+}

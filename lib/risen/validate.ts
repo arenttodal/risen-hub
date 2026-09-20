@@ -223,3 +223,109 @@ export function parseProjectPatch(input: unknown): Result<ProjectPatch> {
   if (Object.keys(patch).length === 0) errors.push('Ingen felter å oppdatere');
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: patch };
 }
+
+// ---------------------------------------------------------------------------
+// Shopping
+// ---------------------------------------------------------------------------
+
+const SHOPPING_STATUSES = ['planned', 'needs_decision', 'ready', 'purchased', 'cancelled'] as const;
+
+export interface NewShoppingListInput {
+  name: string;
+  workItemId: string | null;
+}
+
+export function parseNewShoppingList(input: unknown): Result<NewShoppingListInput> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const value: NewShoppingListInput = {
+    name: text(body.name, 'Navn', 120, errors) ?? '',
+    workItemId: text(body.workItemId, 'Oppgave', 64, errors, false),
+  };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
+}
+
+export interface ShoppingItemInput {
+  name: string;
+  quantityMilli: number;
+  unit: string;
+  estimatedUnitPriceOre: number | null;
+  actualUnitPriceOre: number | null;
+  supplier: string | null;
+  productUrl: string | null;
+  budgetLineId: string | null;
+  status: (typeof SHOPPING_STATUSES)[number];
+}
+
+/**
+ * Prices arrive as kroner strings from the form and are converted to whole øre
+ * here, at the boundary. Nothing downstream ever sees a decimal price, so no
+ * total is ever computed in binary floating point.
+ */
+function priceOre(value: unknown, field: string, errors: string[]): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  const normalised = String(value).trim().replaceAll(' ', '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalised)) {
+    errors.push(`${field} må være et beløp, for eksempel 289,90`);
+    return null;
+  }
+  return Math.round(Number(normalised) * 100);
+}
+
+function quantityMilli(value: unknown, errors: string[]): number {
+  if (value === undefined || value === null || value === '') return 1000;
+  const normalised = String(value).trim().replace(',', '.');
+  if (!/^\d+(\.\d{1,3})?$/.test(normalised)) {
+    errors.push('Mengde må være et positivt tall, for eksempel 2,5');
+    return 1000;
+  }
+  const scaled = Math.round(Number(normalised) * 1000);
+  if (scaled <= 0) {
+    errors.push('Mengde må være større enn null');
+    return 1000;
+  }
+  return scaled;
+}
+
+export function parseShoppingItem(input: unknown): Result<ShoppingItemInput> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const value: ShoppingItemInput = {
+    name: text(body.name, 'Produkt', 200, errors) ?? '',
+    quantityMilli: quantityMilli(body.quantity, errors),
+    unit: text(body.unit, 'Enhet', 20, errors, false) ?? 'stk',
+    estimatedUnitPriceOre: priceOre(body.estimatedUnitPrice, 'Estimert pris', errors),
+    actualUnitPriceOre: priceOre(body.actualUnitPrice, 'Faktisk pris', errors),
+    supplier: text(body.supplier, 'Leverandør', 120, errors, false),
+    productUrl: text(body.productUrl, 'Lenke', 500, errors, false),
+    budgetLineId: text(body.budgetLineId, 'Budsjettpost', 64, errors, false),
+    status: oneOf(body.status, 'Status', SHOPPING_STATUSES, errors, 'planned'),
+  };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
+}
+
+export interface ShoppingItemPatch {
+  status?: ShoppingItemInput['status'];
+  actualUnitPriceOre?: number | null;
+  estimatedUnitPriceOre?: number | null;
+  quantityMilli?: number;
+  name?: string;
+}
+
+export function parseShoppingItemPatch(input: unknown): Result<ShoppingItemPatch> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const patch: ShoppingItemPatch = {};
+
+  if ('status' in body) patch.status = oneOf(body.status, 'Status', SHOPPING_STATUSES, errors, 'planned');
+  if ('actualUnitPrice' in body) patch.actualUnitPriceOre = priceOre(body.actualUnitPrice, 'Faktisk pris', errors);
+  if ('estimatedUnitPrice' in body) patch.estimatedUnitPriceOre = priceOre(body.estimatedUnitPrice, 'Estimert pris', errors);
+  if ('quantity' in body) patch.quantityMilli = quantityMilli(body.quantity, errors);
+  if ('name' in body) {
+    const name = text(body.name, 'Produkt', 200, errors);
+    if (name !== null) patch.name = name;
+  }
+
+  if (Object.keys(patch).length === 0) errors.push('Ingen felter å oppdatere');
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: patch };
+}

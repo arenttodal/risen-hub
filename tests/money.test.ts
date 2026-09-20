@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   calculateTotals,
   formatOre,
+  formatOreExact,
   formatQuantity,
   lineTotalOre,
   parseKronerToOre,
@@ -155,5 +156,23 @@ describe('parsing and formatting', () => {
     assert.equal(formatQuantity(8000), '8');
     assert.equal(formatQuantity(2500), '2,5');
     assert.match(formatOre(352600), /3\s?526 kr/);
+  });
+});
+
+describe('formatOreExact', () => {
+  it('keeps the øre a unit price was entered with', () => {
+    assert.equal(formatOreExact(28990), '289,90 kr');
+  });
+
+  it('falls back to whole kroner when there are no øre', () => {
+    assert.equal(formatOreExact(29000), '290 kr');
+  });
+
+  it('does not hide øre behind a thousands separator', () => {
+    assert.equal(formatOreExact(1250050).replace(/ /g, ' '), '12 500,50 kr');
+  });
+
+  it('matches formatOre whenever the amount is whole kroner', () => {
+    for (const ore of [0, 100, 500000]) assert.equal(formatOreExact(ore), formatOre(ore));
   });
 });

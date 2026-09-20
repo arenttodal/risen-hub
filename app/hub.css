@@ -690,3 +690,53 @@
   .prop-row{grid-template-columns:1fr;gap:4px}
 }
 
+
+/* ---------- Shopping lists (Phase 4) ---------- */
+/* Prices are the point of this panel, so the totals row gets the oversized
+   tabular number and everything else stays hairline and quiet. */
+.shopping{display:grid;gap:22px}
+.shopping-list{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh);padding:18px 20px 16px}
+.shopping-list>header{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.shopping-list h4{font-size:16px;font-weight:600;letter-spacing:-.02em;margin:0}
+.shopping-list>header .count-tag{margin-left:auto}
+.shopping-list .risen-table th:nth-child(5),.shopping-list .risen-table td:nth-child(5){padding-left:18px}
+.shopping-list .risen-table tr.is-cancelled td{color:var(--faint)}
+.shopping-list .risen-table tr.is-cancelled strong{text-decoration:line-through;font-weight:500}
+.status-pill.shopping-planned{background:var(--bg);color:var(--mute)}
+.status-pill.shopping-needs_decision{background:var(--warn-bg);color:var(--warn-ink)}
+.status-pill.shopping-ready{background:var(--accent-s);color:var(--accent)}
+.status-pill.shopping-purchased{background:var(--pos-bg);color:var(--pos)}
+.status-pill.shopping-cancelled{background:var(--bg);color:var(--faint)}
+.row-action{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px;color:var(--mute);margin-left:5px;display:inline-grid;place-items:center}
+.row-action:hover{border-color:var(--accent);color:var(--accent)}
+.shopping-totals{display:flex;flex-wrap:wrap;gap:26px;margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line)}
+.shopping-totals div{display:grid;gap:2px}
+.shopping-totals dt{font-size:12.5px;color:var(--mute)}
+.shopping-totals dd{margin:0;font-size:17px;font-weight:600;letter-spacing:-.02em;color:var(--ink2)}
+.shopping-totals .is-total{margin-left:auto;text-align:right}
+.shopping-totals .is-total dd{font-size:27px;font-weight:700;letter-spacing:-.04em;color:var(--ink)}
+.shopping-split{margin:10px 0 0;font-size:12.5px;color:var(--mute)}
+.shopping-add{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line2)}
+.shopping-add input{border:1px solid var(--line);border-radius:var(--r-in);background:var(--bg);padding:9px 12px;font:inherit;font-size:13.5px;color:var(--ink);outline:0;min-width:0}
+.shopping-add input:focus{border-color:var(--accent);background:var(--card)}
+.shopping-add input[name="name"]{flex:1 1 180px}
+.shopping-add input[name="quantity"],.shopping-add input[name="unit"]{flex:0 0 76px}
+.shopping-add input[name="estimatedUnitPrice"]{flex:0 0 130px}
+.shopping-add button{flex:none;border:0;background:var(--accent);color:#fff;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:600}
+.shopping-add .ghost{background:transparent;color:var(--mute)}
+.shopping-new-list{display:flex;gap:8px;flex-wrap:wrap}
+.shopping-new-list input{flex:1 1 240px;border:1px solid var(--line);border-radius:var(--r-in);background:var(--card);padding:10px 14px;font:inherit;font-size:13.5px;color:var(--ink);outline:0;box-shadow:var(--sh)}
+.shopping-new-list input:focus{border-color:var(--accent)}
+.shopping-new-list button{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:600;color:var(--ink2);box-shadow:var(--sh)}
+.shopping-new-list button:not(:disabled):hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:680px){
+  /* The shared table drops its header row on narrow screens. A price table
+     cannot afford that — unit price and line sum look identical stacked — so
+     these cells carry their own label. */
+  .shopping-list .risen-table td[data-label]::before{content:attr(data-label) ': ';color:var(--mute)}
+  .shopping-list{padding:16px 15px 14px}
+  .shopping-totals{gap:16px}
+  .shopping-totals .is-total{margin-left:0;text-align:left}
+  .shopping-add input[name="quantity"],.shopping-add input[name="unit"],.shopping-add input[name="estimatedUnitPrice"]{flex:1 1 76px}
+  .shopping-add button{flex:1 1 100%}
+}

@@ -122,6 +122,22 @@ export function formatOre(ore: number): string {
   return `${KRONER.format(Math.round(ore / 100))} kr`;
 }
 
+/**
+ * Øre to a display string that keeps the øre when there are any.
+ *
+ * Totals round to whole kroner because that is how the farm talks, but a unit
+ * price someone typed as 289,90 must not read back as 290 — that looks like the
+ * number was lost. So: exact when it matters, rounded when it does not.
+ */
+export function formatOreExact(ore: number): string {
+  const rounded = Math.round(ore);
+  if (rounded % 100 === 0) return formatOre(rounded);
+  const kroner = new Intl.NumberFormat('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    rounded / 100,
+  );
+  return `${kroner} kr`;
+}
+
 /** Quantity for display: 8000 -> "8", 2500 -> "2,5". */
 export function formatQuantity(quantityMilli: number): string {
   const whole = quantityMilli / QUANTITY_SCALE;
