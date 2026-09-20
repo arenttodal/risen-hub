@@ -1,154 +1,365 @@
-# Connecting D1
+# Connecting D1 — complete walkthrough
 
-Step-by-step, from a Worker with no database to `/hub` reading live records.
+Right now the deployed site has **no database**. It works, but `/hub` shows a
+"Seed-data" notice instead of real records, and the dugnad sign-up on the front
+page returns an error.
 
-Right now the deployed Worker has **no D1 binding**. It runs, but every read
-falls back to the seed dataset and the interface shows a "Seed-data" notice.
-The public RSVP on `/` returns 503 for the same reason.
+This guide connects it. There are two routes:
 
-You only do steps 1-4 once. Step 5 repeats whenever a new migration is added.
+- **[Route A — browser only](#route-a--browser-only-recommended)**: no terminal,
+  no installs, about 15 minutes. **Start here.**
+- **[Route B — terminal](#route-b--terminal)**: only if you want the repository
+  on your own machine anyway.
 
----
+Both end in the same place. Route A is not a shortcut or a lesser version.
 
-## Why the binding is off by default
-
-`vite.config.ts` only emits the D1 binding when it has a **real** database id.
-
-Cloudflare rejects a deploy whose binding points at a database that does not
-exist in the account:
-
-```
-D1 binding 'DB' references database '00000000-0000-4000-8000-000000000000'
-which was not found. [code: 10181]
-```
-
-That placeholder id is fine locally, because Miniflare accepts any id, but it
-fails a real deploy. So the build skips the binding until you set
-`CLOUDFLARE_D1_DATABASE_ID`. A deployed Worker without it degrades to the seed
-and says so, instead of failing to deploy.
+> Screens change. If a button is named slightly differently from what is
+> written here, look for the nearest equivalent — the order of operations is
+> what matters.
 
 ---
 
-## Step 1 — Authenticate Wrangler
+## Before you start
 
-On your own machine, in the repository:
+You need:
 
-```bash
-npx wrangler login
+- your Cloudflare login (the account that owns `risen-hub`)
+- your GitHub login (the account that owns `arenttodal/risen-hub`)
+
+Nothing else.
+
+### What you are actually doing
+
+Four things, in this order. It helps to know why:
+
+1. **Create an empty database.** Cloudflare calls it D1.
+2. **Tell the site its ID.** The site refuses to connect to a database it
+   cannot name, so you paste the ID into the build settings.
+3. **Create the tables inside it.** A new database is completely empty — no
+   tables, no columns. You run some SQL to build the structure.
+4. **Redeploy.** The connection is made when the site is built, so it needs
+   one more build to pick it up.
+
+Step 3 is the one people skip. An empty database with no tables looks exactly
+like no database at all from the outside.
+
+---
+
+# Route A — browser only (recommended)
+
+## A1. Create the database
+
+1. Go to **https://dash.cloudflare.com** and log in.
+2. In the left sidebar, open **Storage & databases**, then click **D1**.
+   (If you cannot see it, use the search box at the top and type `D1`.)
+3. Click **Create** (or **Create database**).
+4. For the name, type exactly:
+
+   ```
+   risen-hub
+   ```
+
+5. Click **Create**.
+
+You now have an empty database. The page that opens shows a **Database ID** —
+a long string of letters, numbers and dashes, like
+`3f2a91c4-77bd-4e19-9a03-8c41de77b2aa`.
+
+**Copy that ID and paste it somewhere you can get back to** — a note, an email
+draft, anywhere. You need it in the next step.
+
+> There is usually a small copy icon next to it. If not, select the text and
+> copy it. Do not include any surrounding quotes.
+
+## A2. Tell the site the ID
+
+1. In the left sidebar, go to **Compute** → **Workers & Pages**.
+2. Click **risen-hub** in the list.
+3. Go to the **Settings** tab.
+4. Find the **Build** section — the one showing `npm run build` as the build
+   command. Look for **Build variables** (it currently says **None**).
+5. Click **Add variable** (or **Edit**), then add these two:
+
+   | Variable name | Value |
+   |---|---|
+   | `CLOUDFLARE_D1_DATABASE_ID` | the ID you copied in A1 |
+   | `CLOUDFLARE_D1_DATABASE_NAME` | `risen-hub` |
+
+6. **Save**.
+
+Type the variable names exactly, in capitals, with underscores. A typo here is
+the most common reason this whole process appears to do nothing.
+
+> **Build variables, not Variables and Secrets.** There are two similar-looking
+> settings screens. You want the one in the **Build** section next to the build
+> command. The other one is for values the site reads while running; this value
+> is read while the site is being *built*.
+
+## A3. Create the tables
+
+The database exists but is empty. You are going to run three pieces of SQL
+against it, in order.
+
+### Getting the SQL
+
+Each piece lives in a file on GitHub. For each one:
+
+1. Open the link below.
+2. Click the **Raw** button (top right of the file view).
+3. Select everything (`Ctrl`+`A`, or `Cmd`+`A` on a Mac) and copy it
+   (`Ctrl`+`C` / `Cmd`+`C`).
+
+The three files, **in this order**:
+
+| Order | Link | What it does |
+|---|---|---|
+| 1 | [`drizzle/0000_nebulous_ricochet.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/0000_nebulous_ricochet.sql) | Creates the dugnad sign-up table |
+| 2 | [`drizzle/0001_furry_tyrannus.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/0001_furry_tyrannus.sql) | Creates projects, places, milestones, work items, activity log |
+| 3 | [`drizzle/seed.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/seed.sql) | Adds the four demo projects and their tasks — **optional** |
+
+Skip file 3 if you would rather start with a completely empty Risen. You can
+always run it later.
+
+### Running the SQL
+
+1. Back in Cloudflare, go to **Storage & databases** → **D1** → **risen-hub**.
+2. Open the **Console** tab.
+3. Paste the contents of file 1 into the query box.
+4. Click **Execute** (or **Run**).
+5. Wait for it to report success, then **clear the box**, paste file 2, and
+   execute.
+6. Repeat for file 3 if you want the demo data.
+
+**Do them one at a time, in order.** File 2 will fail if file 1 has not run,
+and file 3 will fail if file 2 has not run — the later ones depend on tables
+the earlier ones create.
+
+> Ignore the `--> statement-breakpoint` comment lines in the files. They are
+> markers for tooling, and SQL treats them as comments.
+
+### Checking it worked
+
+Still in the **Console** tab, run:
+
+```sql
+SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name;
 ```
 
-A browser window opens. Approve the request. Confirm it worked:
+You should see `activity_log`, `milestones`, `places`, `projects`, `rsvps` and
+`work_items`. A `_cf_METADATA` row may appear alongside them — that is
+Cloudflare's own bookkeeping, and it is meant to be there.
 
-```bash
-npx wrangler whoami
+If you ran the seed file too:
+
+```sql
+SELECT name FROM projects;
 ```
 
-## Step 2 — Create the database
+should return Låven, Steinmuren, Drift og verksted and Sommerfestival.
 
-```bash
-npx wrangler d1 create risen-hub
-```
+## A4. Redeploy
 
-The output contains the id you need:
+The site connects to the database when it is built, so it needs one more build.
 
-```
-database_name = "risen-hub"
-database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
+1. Go to **Workers & Pages** → **risen-hub** → **Deployments**.
+2. Find the most recent deployment and choose **Retry deployment** (it may be
+   behind a `⋯` menu).
 
-**Copy the `database_id`.** If you would rather use the dashboard: Storage &
-databases → D1 → Create, then open the database and copy its ID.
+If you cannot find a retry option, make any small change on GitHub — editing
+`README.md` and saving counts — which starts a fresh build automatically.
 
-## Step 3 — Add the build variables
+Wait for the build to finish, about a minute.
 
-In the Cloudflare dashboard: **Workers & Pages → risen-hub → Settings → Build →
-Build variables** (the same screen that shows your build and deploy commands).
+## A5. Check it worked
 
-Add:
-
-| Variable | Value |
-|---|---|
-| `CLOUDFLARE_D1_DATABASE_ID` | the id from step 2 |
-| `CLOUDFLARE_D1_DATABASE_NAME` | `risen-hub` |
-
-The second one is only needed because the default name in the config is
-`site-creator-d1`. If you named your database `site-creator-d1`, you can skip it.
-
-These are build variables, not runtime secrets — they are read by
-`vite.config.ts` while the Worker is being built.
-
-## Step 4 — Create the tables
-
-The database exists but is empty. Apply the migrations in `drizzle/`:
-
-```bash
-npm run db:remote -- --database risen-hub --confirm
-```
-
-To also insert the four demo projects and their work items:
-
-```bash
-npm run db:remote -- --database risen-hub --confirm --seed
-```
-
-The script applies each migration in journal order, records what it applied in
-an `applied_migrations` table, and skips anything already there. It refuses to
-run without `--confirm`, and never seeds unless you pass `--seed`.
-
-## Step 5 — Redeploy and check
-
-Trigger a deploy (push to `main`, or **Deployments → Retry** in the dashboard).
-
-The build log should now show the binding:
+In the build log, near the end, you should now see:
 
 ```
 Your Worker has access to the following bindings:
 env.DB (risen-hub)      D1 Database
 ```
 
-Then confirm in the app:
+Then open the site:
 
-- `https://risen-hub.arentto.workers.dev/hub` — the "Seed-data" notice is gone
-- `https://risen-hub.arentto.workers.dev/api/rsvp` — returns `{}` or counts,
-  not a 503
+- **https://risen-hub.arentto.workers.dev/hub** — the sand-coloured
+  "Seed-data" notice at the top should be **gone**.
+- **https://risen-hub.arentto.workers.dev/api/rsvp** — should show `{}` or
+  something like `{"farmhouse":1}`. Not an error message.
 
-If the notice is still there, the binding did not reach the build. Check the
-build log for `[risen] D1 binding \`DB\` skipped for this build` — that means
-`CLOUDFLARE_D1_DATABASE_ID` is not visible to the build step.
+That is the whole thing. Skip to [Troubleshooting](#troubleshooting) if
+anything does not match.
 
 ---
 
-## Whenever you add a migration
+# Route B — terminal
+
+Only worth doing if you want the code on your own machine anyway. Route A
+achieves exactly the same result.
+
+## B1. Install Node.js
+
+Node is the program that runs the project's tooling.
+
+1. Go to **https://nodejs.org**.
+2. Download the **LTS** version.
+3. Run the installer, accepting the defaults.
+
+## B2. Open a terminal
+
+- **Mac**: press `Cmd`+`Space`, type `Terminal`, press `Enter`.
+- **Windows**: press the Start key, type `PowerShell`, press `Enter`.
+
+A window opens with a blinking cursor. You type a line and press `Enter` to run
+it. Nothing here can damage your computer.
+
+Check Node installed properly:
 
 ```bash
-npm run db:generate                                   # writes drizzle/000N_*.sql
-npm run db:local                                      # apply it locally
-npm run db:remote -- --database risen-hub --confirm   # apply it remotely
+node --version
 ```
 
-Migrations are additive. Never edit a migration that has already been applied —
-add a new one.
+You should see something like `v22.11.0`. If you get "command not found",
+close the terminal, open a new one, and try again — a fresh window is needed
+after installing.
+
+## B3. Get the code
+
+This downloads the project into a folder called `risen-hub` inside your home
+folder.
+
+```bash
+cd ~
+git clone https://github.com/arenttodal/risen-hub.git
+cd risen-hub
+```
+
+`cd` means "go into this folder". `~` is your home folder.
+
+On Windows, if `git` is not recognised, install it from
+**https://git-scm.com/downloads**, then open a new PowerShell window and retry.
+
+Now install the project's dependencies. This takes a minute or two and prints a
+lot of text, including warnings — that is normal.
+
+```bash
+npm install
+```
+
+## B4. Log in to Cloudflare
+
+```bash
+npx wrangler login
+```
+
+A browser window opens asking you to authorise Wrangler. Approve it, then
+return to the terminal. Confirm:
+
+```bash
+npx wrangler whoami
+```
+
+It should print your email address.
+
+## B5. Create the database
+
+```bash
+npx wrangler d1 create risen-hub
+```
+
+The output includes:
+
+```
+database_name = "risen-hub"
+database_id = "3f2a91c4-77bd-4e19-9a03-8c41de77b2aa"
+```
+
+Copy the `database_id` value, without the quotes.
+
+## B6. Add the build variables
+
+This part is in the browser regardless — follow [A2](#a2-tell-the-site-the-id).
+
+## B7. Create the tables
+
+```bash
+npm run db:remote -- --database risen-hub --confirm
+```
+
+To include the demo projects:
+
+```bash
+npm run db:remote -- --database risen-hub --confirm --seed
+```
+
+The `--` after the script name is required; it passes the options through to
+the script rather than to npm.
+
+This applies each migration in order and records what it applied, so running it
+again later is safe — it skips anything already done.
+
+## B8. Redeploy and check
+
+Follow [A4](#a4-redeploy) and [A5](#a5-check-it-worked).
+
+---
+
+## Troubleshooting
+
+**The build fails with `error 10181` / "database not found".**
+The ID in `CLOUDFLARE_D1_DATABASE_ID` does not match a real database. Re-copy
+it from **Storage & databases → D1 → risen-hub**, watching for a missing
+character at either end.
+
+**`/hub` still shows the "Seed-data" notice.**
+The build did not receive the ID. Open the build log and search for:
+
+```
+[risen] D1 binding `DB` skipped for this build
+```
+
+If that line is there, the variable is not reaching the build — check the
+spelling of `CLOUDFLARE_D1_DATABASE_ID`, and that you added it under **Build
+variables** rather than the runtime variables screen. Then redeploy.
+
+**`/hub` shows "Databasen svarte ikke" (the database did not answer).**
+The site found the database, but the tables are missing. Step A3 was skipped or
+only partly completed.
+
+**`no such table: projects`.**
+Same cause — file 2 did not run, or ran against a different database.
+
+**The sign-up form still says availability is unavailable.**
+The `rsvps` table comes from file 1. Run it.
+
+**A SQL file errors partway through.**
+Run the files strictly in order: 1, then 2, then 3. If you are unsure what ran,
+it is safe to re-run all three — `CREATE TABLE` statements will complain that a
+table already exists, which you can ignore, and the seed file cannot create
+duplicates.
+
+---
+
+## Later: when the schema changes
+
+When a new migration file appears in `drizzle/`, apply it the same way — paste
+it into the D1 console (Route A), or run
+`npm run db:remote -- --database risen-hub --confirm` (Route B).
+
+You can switch between the two freely. If you set the database up by pasting
+SQL and later run the script, it notices the tables already exist, records them
+as applied, and carries on with whatever is genuinely new.
+
+Migrations are only ever added, never edited. Editing one that has already run
+leaves the database and the code disagreeing about its own shape.
 
 ## Local development
 
-Local development does not need any of the above. Miniflare keeps its own
-database under `.wrangler/`:
+None of the above is needed to run the site on your own machine. A separate
+local database is created automatically:
 
 ```bash
 npm run db:local
 npm run dev
 ```
 
-## Troubleshooting
-
-**Deploy fails with error 10181.** The id in `CLOUDFLARE_D1_DATABASE_ID` does
-not match a database in the account. Re-check it with `npx wrangler d1 list`.
-
-**`/hub` shows "Databasen svarte ikke".** The binding exists but the query
-failed — usually the tables are missing. Run step 4.
-
-**`no such table: projects`.** Same cause. Step 4 was skipped, or was run
-against a different database than the one bound.
-
-**RSVP still returns 503.** The `rsvps` table comes from migration `0000`. Step
-4 applies it along with the rest.
+Then open **http://localhost:3000/hub**.

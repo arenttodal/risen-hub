@@ -13,9 +13,11 @@
  * safe to re-run after adding a new migration.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { buildSeedSql } from './seed-sql.mjs';
+import { applyMigrations } from './migrations.mjs';
 
 const args = process.argv.slice(2);
 const flag = name => args.includes(`--${name}`);
@@ -46,52 +48,18 @@ function run(extra) {
   });
 }
 
-const quote = v => (v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replaceAll("'", "''")}'`);
-const insert = (table, columns, rows) =>
-  rows
-    .map(row => `INSERT OR IGNORE INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(c => quote(row[c])).join(', ')});`)
-    .join('\n');
-
 function execSql(label, sql) {
   const file = join(scratch, `${label}.sql`);
   writeFileSync(file, sql, 'utf8');
   run(['--file', file]);
 }
 
-// 1. Migrations, in journal order, skipping any already recorded.
-const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8'));
-run(['--command', 'CREATE TABLE IF NOT EXISTS applied_migrations (tag TEXT PRIMARY KEY, applied_at TEXT NOT NULL)']);
-const applied = new Set(
-  (JSON.parse(run(['--command', 'SELECT tag FROM applied_migrations', '--json']))[0]?.results ?? []).map(r => r.tag),
-);
-
-for (const entry of journal.entries.sort((a, b) => a.idx - b.idx)) {
-  if (applied.has(entry.tag)) {
-    console.log(`· ${entry.tag} already applied`);
-    continue;
-  }
-  run(['--file', `drizzle/${entry.tag}.sql`]);
-  execSql(
-    `mark-${entry.tag}`,
-    `INSERT OR IGNORE INTO applied_migrations (tag, applied_at) VALUES (${quote(entry.tag)}, ${quote(new Date().toISOString())});`,
-  );
-  console.log(`✓ applied ${entry.tag}`);
-}
+// 1. Migrations, in journal order.
+applyMigrations(run, execSql);
 
 // 2. Seed, only when explicitly asked for.
 if (flag('seed')) {
-  const { seedPlaces, seedProjects, seedMilestones, seedWorkItems } = await import('../data/risen.ts');
-  const now = new Date().toISOString();
-  const stamped = rows => rows.map(row => ({ ...row, created_at: now, updated_at: now }));
-  execSql('seed', [
-    insert('places', ['id', 'slug', 'name', 'kind', 'summary', 'condition', 'visibility', 'created_at', 'updated_at'], stamped(seedPlaces)),
-    insert('projects', ['id', 'slug', 'name', 'summary', 'category', 'status', 'progress', 'budget_nok', 'funded_nok', 'next_action', 'place_id', 'visibility', 'published_at', 'created_at', 'updated_at'],
-      stamped(seedProjects).map(p => ({ ...p, budget_nok: p.budgetNok, funded_nok: p.fundedNok, next_action: p.nextAction, place_id: p.placeId, published_at: p.publishedAt }))),
-    insert('milestones', ['id', 'project_id', 'title', 'detail', 'status', 'position', 'due_date', 'completed_at', 'visibility', 'created_at', 'updated_at'],
-      stamped(seedMilestones).map(m => ({ ...m, project_id: m.projectId, due_date: m.dueDate, completed_at: m.completedAt }))),
-    insert('work_items', ['id', 'project_id', 'place_id', 'milestone_id', 'title', 'detail', 'type', 'priority', 'status', 'assignee', 'due_date', 'visibility', 'created_at', 'updated_at'],
-      stamped(seedWorkItems).map(w => ({ ...w, project_id: w.projectId, place_id: w.placeId, milestone_id: w.milestoneId, due_date: w.dueDate }))),
-  ].join('\n'));
+  execSql('seed', await buildSeedSql());
   console.log('✓ seeded the remote database');
 } else {
   console.log('· skipped seeding (pass --seed to insert the demo records)');
