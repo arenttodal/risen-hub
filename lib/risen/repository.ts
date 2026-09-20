@@ -1,8 +1,11 @@
 import { asc, count, eq, or } from 'drizzle-orm';
 import { tryGetDb } from '@/db';
 import {
+  documentRequirements,
   events,
   fundingAngleProjects,
+  fundingSchemeAngles,
+  fundingSchemeDocuments,
   fundingAngles,
   fundingSchemes,
   members,
@@ -356,4 +359,57 @@ export async function getWorkItem(id: string): Promise<WorkItem | null> {
   if (!db) return seedWorkItems.find(item => item.id === id) ?? null;
   const rows = await db.select().from(workItems).where(eq(workItems.id, id)).limit(1);
   return rows.length > 0 ? toWorkItem(rows[0]) : null;
+}
+
+export interface SchemeRequirement {
+  id: string;
+  name: string;
+  description: string | null;
+  /** `catalogued | referenced | local` — see db/schema.ts. */
+  source: string;
+  /** Scheme ids that ask for this document. */
+  schemeIds: string[];
+}
+
+/**
+ * Every document requirement, with the schemes that ask for it.
+ *
+ * Sorted by how many schemes want it: a paper five funders all need is worth
+ * making before one only a single funder asks for, and that ordering is the
+ * whole reason to show this list rather than leave it inside each scheme.
+ */
+export async function listDocumentRequirements(): Promise<Loaded<SchemeRequirement[]>> {
+  const db = tryGetDb();
+  if (!db) return seeded([]);
+  try {
+    const [rows, links] = await Promise.all([
+      db.select().from(documentRequirements),
+      db.select().from(fundingSchemeDocuments),
+    ]);
+    const data = rows
+      .map(row => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        source: row.source,
+        schemeIds: links.filter(link => link.documentId === row.id).map(link => link.schemeId),
+      }))
+      .sort(
+        (a, b) => b.schemeIds.length - a.schemeIds.length || a.name.localeCompare(b.name, 'nb'),
+      );
+    return { data, source: 'database' };
+  } catch (error) {
+    return seeded([], describe(error));
+  }
+}
+
+/** Which angles argue for which schemes. Empty when the tables are not there yet. */
+export async function listSchemeAngleLinks(): Promise<{ schemeId: string; angleId: string }[]> {
+  const db = tryGetDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(fundingSchemeAngles);
+  } catch {
+    return [];
+  }
 }

@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TriangleAlert } from 'lucide-react';
-import { listFundingAngles, listFundingSchemes, listProjects } from '@/lib/risen/repository';
+import {
+  listDocumentRequirements,
+  listFundingAngles,
+  listFundingSchemes,
+  listProjects,
+  listSchemeAngleLinks,
+  type SchemeRequirement,
+} from '@/lib/risen/repository';
 import { isVerified } from '@/lib/risen/types';
 import { daysUntil, formatDate } from '@/lib/risen/format';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
@@ -18,13 +25,26 @@ export const metadata: Metadata = { title: 'Finansiering · Risen Hub' };
 const LEGACY_SNAPSHOT = '2026-09-08';
 
 export default async function FundingPage() {
-  const [schemesResult, anglesResult, projectsResult] = await Promise.all([
+  const [schemesResult, anglesResult, projectsResult, requirementsResult, angleLinks] = await Promise.all([
     listFundingSchemes(),
     listFundingAngles(),
     listProjects(),
+    listDocumentRequirements(),
+    listSchemeAngleLinks(),
   ]);
   const schemes = schemesResult.data;
   const angles = anglesResult.data;
+  const requirements = requirementsResult.data;
+  const schemeName = new Map(schemes.map(scheme => [scheme.id, scheme.name]));
+  /**
+   * Split at two schemes.
+   *
+   * Twenty of these are wanted by exactly one scheme, and listing them all at
+   * once buries the three that unlock most applications. The tail is still
+   * here, one click away — it is a real requirement, just not a priority.
+   */
+  const shared = requirements.filter(requirement => requirement.schemeIds.length > 1);
+  const singles = requirements.filter(requirement => requirement.schemeIds.length <= 1);
   const projectName = (id: string | null) =>
     id ? (projectsResult.data.find(project => project.id === id)?.name ?? 'Ukjent prosjekt') : 'Uten prosjekt';
 
@@ -164,6 +184,35 @@ export default async function FundingPage() {
         </p>
       </section>
 
+      {requirements.length > 0 && (
+        <section className="hub-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="kicker">Dokumentkrav</span>
+              <h3>Det samme papiret går igjen</h3>
+            </div>
+            <span className="count-tag tnum">{requirements.length} krav</span>
+          </div>
+          <p className="panel-lead">
+            Sortert etter hvor mange ordninger som ber om det. Et dokument flere ordninger vil ha
+            er verdt å lage først — det låser opp flest søknader for samme arbeid.
+          </p>
+          <RequirementList rows={shared} schemeName={schemeName} />
+          {singles.length > 0 && (
+            <details className="requirement-rest">
+              <summary>
+                {singles.length} krav som bare én ordning ber om
+              </summary>
+              <RequirementList rows={singles} schemeName={schemeName} />
+            </details>
+          )}
+          <p className="panel-foot-note">
+            Om dokumentene faktisk finnes er ikke importert — den gamle appen lagret det bare i
+            nettleseren. Den statusen må fylles inn her.
+          </p>
+        </section>
+      )}
+
       <section className="hub-panel">
         <div className="panel-heading">
           <div>
@@ -191,11 +240,54 @@ export default async function FundingPage() {
                       </span>
                     ))}
               </span>
+              {(() => {
+                const forSchemes = angleLinks.filter(link => link.angleId === angle.id);
+                return forSchemes.length > 0 ? (
+                  <span>
+                    {forSchemes.length} {forSchemes.length === 1 ? 'ordning' : 'ordninger'}
+                  </span>
+                ) : null;
+              })()}
               {angle.missing && <span className="missing">Mangler: {angle.missing}</span>}
             </div>
           </article>
         ))}
       </section>
     </div>
+  );
+}
+
+function RequirementList({
+  rows,
+  schemeName,
+}: {
+  rows: SchemeRequirement[];
+  schemeName: Map<string, string>;
+}) {
+  return (
+    <ul className="requirement-list">
+      {rows.map(requirement => (
+        <li key={requirement.id}>
+          <div>
+            <strong>{requirement.name}</strong>
+            {requirement.description ? (
+              <small>{requirement.description}</small>
+            ) : (
+              /* The archive asked for this without ever describing it. Saying so is
+                 the honest option; writing a description would invent a funder's
+                 demand. See docs/LEGACY-IMPORT-INVENTORY.md. */
+              <small className="missing">Beskrivelse mangler i kildedata</small>
+            )}
+          </div>
+          <span
+            className="count-tag tnum"
+            title={requirement.schemeIds.map(id => schemeName.get(id) ?? id).join(', ')}
+          >
+            {requirement.schemeIds.length}{' '}
+            {requirement.schemeIds.length === 1 ? 'ordning' : 'ordninger'}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
