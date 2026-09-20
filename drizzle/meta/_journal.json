@@ -15,6 +15,13 @@
       "when": 1789927743841,
       "tag": "0001_furry_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789933275428,
+      "tag": "0002_petite_scorpion",
+      "breakpoints": true
     }
   ]
 }

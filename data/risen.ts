@@ -1,4 +1,14 @@
-import type { Milestone, Place, Project, WorkItem } from '@/lib/risen/types';
+import type {
+  FundingAngle,
+  FundingScheme,
+  Member,
+  Milestone,
+  Place,
+  Project,
+  Proposal,
+  RisenEvent,
+  WorkItem,
+} from '@/lib/risen/types';
 
 /**
  * Seed dataset for Risen.
@@ -143,20 +153,43 @@ export const seedWorkItems: WorkItem[] = [
 ];
 
 /**
- * Funding deadlines, kept as plain illustrative copy until the Funding module
- * owns real scheme records. CLAUDE.md rule 8 requires `sourceUrl`, `verifiedAt`
- * and a status before any of these may be presented as current, so they are
- * labelled as illustrative wherever they are rendered.
+ * Funding schemes.
+ *
+ * Every one of these is research that nobody has checked against the scheme's
+ * own pages, so `sourceUrl` and `verifiedAt` are null and the status is
+ * `unverified`. CLAUDE.md rule 8 forbids presenting them as current, and the
+ * interface labels them accordingly. Fill in the source and the date before
+ * anyone plans around a date here.
  */
-export const deadlines = [
-  { date: '1. okt. 2026', title: 'TEFT', project: 'Risen som møteplass', state: 'urgent' },
-  { date: '15. jan. 2027', title: 'Regionalt kulturfond', project: 'Festivalprogram', state: 'upcoming' },
-  { date: '15. feb. 2027', title: 'Spillemidler kulturarena', project: 'Låven', state: 'upcoming' },
-  { date: '1. mars 2027', title: 'Kulturrom / Gjenklang', project: 'Scene og akustikk', state: 'upcoming' },
+export const seedFundingSchemes: FundingScheme[] = [
+  { id: 'fs-teft', name: 'TEFT', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 1. oktober 2026. Ikke bekreftet.', deadlineAt: '2026-10-01', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
+  { id: 'fs-kulturfond', name: 'Regionalt kulturfond', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 15. januar 2027. Ikke bekreftet.', deadlineAt: '2027-01-15', verifiedAt: null, status: 'unverified', projectId: 'festival', visibility: 'members' },
+  { id: 'fs-spillemidler', name: 'Spillemidler kulturarena', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 15. februar 2027. Ikke bekreftet.', deadlineAt: '2027-02-15', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
+  { id: 'fs-kulturrom', name: 'Kulturrom / Gjenklang', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 1. mars 2027. Ikke bekreftet.', deadlineAt: '2027-03-01', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
 ];
 
-/** Idea bank entries. Classification follows PLATFORM-SPEC.md section 6. */
-export const fundingAngles = [
-  { id: 'FA-014', title: 'Separere varme arbeider fra historisk låve', strength: 'Sterkt støtteargument', projects: ['Låven', 'Drift og verksted'], missing: 'Bilder og faglig risikovurdering' },
-  { id: 'FA-015', title: 'Aktiv bruk som vern av gårdsmiljøet', strength: 'Kjerneargument', projects: ['Låven', 'Steinmuren'], missing: 'Historikk og bruksplan' },
+/** Idea bank. Classification follows PLATFORM-SPEC.md section 6. */
+export const seedFundingAngles: FundingAngle[] = [
+  { id: 'FA-014', title: 'Separere varme arbeider fra historisk låve', description: 'Skille sveising, sliping og maskinvedlikehold fra bygninger som skal bevares og brukes til kultur.', strength: 'strong', missing: 'Bilder og faglig risikovurdering', sourceUrl: null, verifiedAt: null, projectIds: ['barn', 'workshop'], visibility: 'members' },
+  { id: 'FA-015', title: 'Aktiv bruk som vern av gårdsmiljøet', description: 'Bygninger som er i bruk forfaller saktere enn bygninger som står tomme.', strength: 'core', missing: 'Historikk og bruksplan', sourceUrl: null, verifiedAt: null, projectIds: ['barn', 'wall'], visibility: 'members' },
 ];
+
+/**
+ * Events. The two dugnad weekends match the sample weekends on the public page;
+ * `rsvpKey` ties them to the existing `rsvps` rows so sign-up counts are real.
+ */
+export const seedEvents: RisenEvent[] = [
+  { id: 'ev-dugnad-farmhouse', slug: 'dugnad-vaaronn', title: 'En frisk start for våningshuset', description: 'Rydding, sliping og enkle reparasjoner.', rsvpKey: 'farmhouse', startsAt: '2026-10-17', endsAt: '2026-10-18', capacity: 16, projectId: 'barn', placeId: 'place-laven', visibility: 'public', publicationStatus: 'published' },
+  { id: 'ev-dugnad-barn', slug: 'dugnad-laven', title: 'Mange hender. Én vakker låve.', description: 'Tømrerarbeid, maling og felles måltider.', rsvpKey: 'barn', startsAt: '2027-04-24', endsAt: '2027-04-25', capacity: 20, projectId: 'barn', placeId: 'place-laven', visibility: 'public', publicationStatus: 'published' },
+  { id: 'ev-sommerfestival', slug: 'sommerfestival-2027', title: 'Sommerfestival', description: 'Årlig festival på tunet. Datoer ikke fastsatt.', rsvpKey: null, startsAt: null, endsAt: null, capacity: null, projectId: 'festival', placeId: 'place-tunet', visibility: 'members', publicationStatus: 'draft' },
+];
+
+/**
+ * Members and proposals are deliberately empty.
+ *
+ * CLAUDE.md rule 5 keeps the role fields ready, but there is no authentication
+ * yet, so no real personal data may be entered. The tables exist so the module
+ * shows a real empty list rather than a placeholder.
+ */
+export const seedMembers: Member[] = [];
+export const seedProposals: Proposal[] = [];

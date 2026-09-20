@@ -78,6 +78,87 @@ export interface ActivityEntry {
   createdAt: string;
 }
 
+export type SchemeStatus = 'unverified' | 'verified' | 'passed' | 'closed';
+export type AngleStrength = 'core' | 'strong' | 'context' | 'weak' | 'ineligible' | 'needs_verification';
+export type PublicationStatus = 'draft' | 'review' | 'published' | 'archived';
+export type MemberRole = 'admin' | 'member' | 'volunteer';
+export type ProposalStatus = 'draft' | 'open' | 'decided' | 'withdrawn';
+
+export interface FundingScheme {
+  id: string;
+  name: string;
+  provider: string | null;
+  sourceUrl: string | null;
+  eligibilitySummary: string | null;
+  deadlineAt: string | null;
+  verifiedAt: string | null;
+  status: SchemeStatus;
+  projectId: string | null;
+  visibility: Visibility;
+}
+
+export interface FundingAngle {
+  id: string;
+  title: string;
+  description: string | null;
+  strength: AngleStrength;
+  missing: string | null;
+  sourceUrl: string | null;
+  verifiedAt: string | null;
+  projectIds: string[];
+  visibility: Visibility;
+}
+
+export interface RisenEvent {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  rsvpKey: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  capacity: number | null;
+  projectId: string | null;
+  placeId: string | null;
+  visibility: Visibility;
+  publicationStatus: PublicationStatus;
+  /** Filled from the `rsvps` table, which still owns the public sign-ups. */
+  signups?: number;
+}
+
+export interface Member {
+  id: string;
+  name: string;
+  email: string | null;
+  role: MemberRole;
+  status: string;
+}
+
+export interface Proposal {
+  id: string;
+  title: string;
+  body: string | null;
+  status: ProposalStatus;
+  closesAt: string | null;
+  decidedAt: string | null;
+  outcome: string | null;
+  projectId: string | null;
+  visibility: Visibility;
+}
+
+/**
+ * CLAUDE.md rule 8: a deadline may only be shown as current when someone has
+ * checked it against the scheme's own pages and recorded when.
+ */
+export function isVerified(record: Pick<FundingScheme, 'sourceUrl' | 'verifiedAt' | 'status'>): boolean {
+  return record.status === 'verified' && Boolean(record.sourceUrl) && Boolean(record.verifiedAt);
+}
+
+/** A project is public only when it is marked public AND explicitly published. */
+export function isPublished(project: Pick<Project, 'visibility' | 'publishedAt'>): boolean {
+  return project.visibility === 'public' && project.publishedAt !== null;
+}
+
 /** Where a read came from, so the interface can say so instead of implying live data. */
 export type DataSource = 'database' | 'seed';
 

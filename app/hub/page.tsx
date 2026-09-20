@@ -1,18 +1,26 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Hammer } from 'lucide-react';
-import { deadlines, fundingAngles } from '@/data/risen';
-import { listProjects, listWorkItems } from '@/lib/risen/repository';
+import { listFundingAngles, listFundingSchemes, listProjects, listWorkItems } from '@/lib/risen/repository';
+import { formatDate, money } from '@/lib/risen/format';
+import { isVerified } from '@/lib/risen/types';
+import { strengthLabels } from '@/components/risen/funding-labels';
 import { JosefaTrigger } from '@/components/risen/josefa-context';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
-import { money } from '@/components/risen/project-card';
 
-export const metadata: Metadata = { title: 'Overview · Risen Hub' };
+export const metadata: Metadata = { title: 'Oversikt · Risen Hub' };
 
 export default async function OverviewPage() {
-  const [projectsResult, workResult] = await Promise.all([listProjects(), listWorkItems()]);
+  const [projectsResult, workResult, schemesResult, anglesResult] = await Promise.all([
+    listProjects(),
+    listWorkItems(),
+    listFundingSchemes(),
+    listFundingAngles(),
+  ]);
   const projects = projectsResult.data;
   const work = workResult.data;
+  const schemes = schemesResult.data;
+  const angles = anglesResult.data;
 
   const openWork = work.filter(item => item.status !== 'done');
   const readyWork = work.filter(item => item.status === 'ready');
@@ -87,19 +95,20 @@ export default async function OverviewPage() {
 
         <section className="hub-panel deadline-panel">
           <PanelHeading kicker="FUNDING" title="Kommende frister" action="Kalender" href="/hub/funding" />
-          {deadlines.map(deadline => (
-            <article className="deadline-row" key={deadline.title}>
-              <time>{deadline.date}</time>
+          {schemes.slice(0, 4).map(scheme => (
+            <article className="deadline-row" key={scheme.id}>
+              <time>{formatDate(scheme.deadlineAt)}</time>
               <div>
-                <strong>{deadline.title}</strong>
-                <span>{deadline.project}</span>
+                <strong>{scheme.name}</strong>
+                <span>{projects.find(project => project.id === scheme.projectId)?.name ?? 'Uten prosjekt'}</span>
               </div>
-              <i className={deadline.state} />
+              <i className={isVerified(scheme) ? 'verified' : 'unverified'} />
             </article>
           ))}
           <p className="panel-foot-note">
-            Illustrative frister. Ingen av dem har kilde eller verifiseringsdato ennå, og de må
-            bekreftes mot ordningens egne sider før de brukes.
+            {schemes.filter(scheme => !isVerified(scheme)).length} av {schemes.length} frister er
+            ikke bekreftet mot ordningens egne sider. De må verifiseres før noen planlegger etter
+            dem.
           </p>
         </section>
 
@@ -127,13 +136,13 @@ export default async function OverviewPage() {
 
         <section className="hub-panel angle-panel">
           <PanelHeading kicker="IDÉBANK" title="Funding angles" action="Se alle" href="/hub/funding" />
-          {fundingAngles.map(angle => (
+          {angles.map(angle => (
             <article key={angle.id}>
               <span>
-                {angle.id} · {angle.strength}
+                {angle.id} · {strengthLabels[angle.strength]}
               </span>
               <strong>{angle.title}</strong>
-              <small>Mangler: {angle.missing}</small>
+              {angle.missing && <small>Mangler: {angle.missing}</small>}
             </article>
           ))}
           <JosefaTrigger className="ask-josefa">
