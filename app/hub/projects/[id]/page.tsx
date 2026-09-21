@@ -198,30 +198,24 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             <span className="kicker">Innkjøp</span>
             <h3>Materialer og kostnader</h3>
           </div>
+          {/* One figure, in the heading. "Gjenstår" is forecast minus purchased
+              and "estimert" only differs once someone records a real price, so
+              neither earns a tile of its own — they go in the title attribute
+              for anyone who wants the breakdown. */}
           {shopping.itemCount > 0 && (
-            <span className="count-tag tnum">{formatOre(shopping.forecastOre)} i prognose</span>
+            <span
+              className="shop-total tnum"
+              title={`Estimert ${formatOre(shopping.estimatedOre)} · kjøpt ${formatOre(
+                shopping.purchasedOre,
+              )} · gjenstår ${formatOre(shopping.remainingOre)}`}
+            >
+              {formatOre(shopping.forecastOre)}
+              {shopping.purchasedOre > 0 && (
+                <small>{formatOre(shopping.purchasedOre)} kjøpt</small>
+              )}
+            </span>
           )}
         </div>
-        {shopping.itemCount > 0 && (
-          <dl className="shopping-totals">
-            <div>
-              <dt>Estimert</dt>
-              <dd className="tnum">{formatOre(shopping.estimatedOre)}</dd>
-            </div>
-            <div>
-              <dt>Kjøpt</dt>
-              <dd className="tnum">{formatOre(shopping.purchasedOre)}</dd>
-            </div>
-            <div>
-              <dt>Gjenstår</dt>
-              <dd className="tnum">{formatOre(shopping.remainingOre)}</dd>
-            </div>
-            <div className="is-total">
-              <dt>Prosjektet totalt</dt>
-              <dd className="tnum">{formatOre(shopping.forecastOre)}</dd>
-            </div>
-          </dl>
-        )}
         <ProjectShopping projectId={project.id} />
       </section>
 

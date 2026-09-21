@@ -10,6 +10,13 @@ import { formatOre, formatOreExact, formatQuantity, type ShoppingTotals } from '
  * Every total shown here is computed on the server from integer øre and simply
  * rendered — the client never adds prices up itself, because the numbers feed a
  * budget and the only defensible source is the stored rows.
+ *
+ * The layout is deliberately dense. An earlier version gave each list a table
+ * with five headers and a block of four oversized figures, then repeated the
+ * same four figures for the project — which on a project with one list meant
+ * showing the identical number twice in 27px type. A row here is one line:
+ * name, what it costs, and what you can do about it. Anything that would repeat
+ * a figure already on screen is left out rather than restated.
  */
 
 interface ShoppingItemRow {
@@ -31,11 +38,15 @@ interface ShoppingListRow {
   totals: ShoppingTotals;
 }
 
-const statusLabels: Record<string, string> = {
-  planned: 'Planlagt',
+/**
+ * Only the states a row can actually be in that are worth saying out loud.
+ * `planned` is the default and every row would wear it, so it says nothing;
+ * `purchased` is already visible in the row's own styling. What is left is the
+ * exceptions, which is the only time a label earns its width.
+ */
+const exceptionLabels: Record<string, string> = {
   needs_decision: 'Må avklares',
-  ready: 'Klar til kjøp',
-  purchased: 'Kjøpt',
+  ready: 'Klar',
   cancelled: 'Kansellert',
 };
 
@@ -46,6 +57,7 @@ export function ProjectShopping({ projectId }: { projectId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newListName, setNewListName] = useState('');
+  const [namingList, setNamingList] = useState(false);
   const [addingTo, setAddingTo] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -88,6 +100,7 @@ export function ProjectShopping({ projectId }: { projectId: string }) {
       return;
     }
     setNewListName('');
+    setNamingList(false);
     await load();
     router.refresh();
   }
@@ -130,152 +143,130 @@ export function ProjectShopping({ projectId }: { projectId: string }) {
 
   if (loading && lists.length === 0) return <p className="panel-empty">Laster innkjøp…</p>;
 
+  // A per-list subtotal repeats the project total exactly when there is one
+  // list, so it only appears once there is something to tell apart.
+  const showListSums = lists.length > 1;
+
   return (
-    <div className="shopping">
+    <div className="shop">
       {error && (
         <p className="work-failure" role="alert">
           {error}
         </p>
       )}
 
-      {lists.length === 0 && (
-        <div className="work-empty">
-          <h3>Ingen innkjøpsliste ennå</h3>
-          <p>Lag en liste for materialer, utstyr eller andre prosjektkostnader.</p>
-        </div>
+      {lists.length === 0 && !namingList && (
+        <p className="panel-empty">
+          Ingen innkjøpsliste ennå.{' '}
+          <button type="button" className="link-button" onClick={() => setNamingList(true)}>
+            Lag en liste
+          </button>{' '}
+          for materialer eller utstyr.
+        </p>
       )}
 
       {lists.map(list => {
         const rows = items[list.id] ?? [];
+        const open = rows.filter(row => row.status !== 'cancelled');
         return (
-          <section className="shopping-list" key={list.id}>
+          <section className="shop-list" key={list.id}>
             <header>
               <h4>{list.name}</h4>
-              <span className="count-tag tnum">
-                {list.totals.purchasedCount} av {list.totals.itemCount} kjøpt
-              </span>
+              {showListSums && list.totals.forecastOre > 0 && (
+                <span className="shop-list-sum tnum">{formatOre(list.totals.forecastOre)}</span>
+              )}
+              {open.length > 0 && (
+                <span className="shop-count tnum">
+                  {list.totals.purchasedCount}/{list.totals.itemCount}
+                </span>
+              )}
             </header>
 
-            {rows.length === 0 ? (
-              <p className="panel-empty">
-                Ingen produkter ennå. Legg til det som må kjøpes, så regnes kostnaden med i
-                prosjektets prognose.
-              </p>
-            ) : (
-            <table className="risen-table">
-              <thead>
-                <tr>
-                  <th>Produkt</th>
-                  <th className="num">Mengde</th>
-                  <th className="num">Enhetspris</th>
-                  <th className="num">Sum</th>
-                  <th>Status</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
+            {rows.length > 0 && (
+              <ul className="shop-items">
                 {rows.map(row => {
                   const unitOre = row.actualUnitPriceOre ?? row.estimatedUnitPriceOre;
                   const lineOre = unitOre === null ? null : Math.round((row.quantityMilli * unitOre) / 1000);
+                  const purchased = row.status === 'purchased';
+                  const cancelled = row.status === 'cancelled';
+                  const exception = exceptionLabels[row.status];
                   return (
-                    <tr key={row.id} className={row.status === 'cancelled' ? 'is-cancelled' : ''}>
-                      <td>
-                        <strong>{row.name}</strong>
+                    <li
+                      key={row.id}
+                      className={`shop-item${purchased ? ' is-purchased' : ''}${cancelled ? ' is-cancelled' : ''}`}
+                    >
+                      <button
+                        type="button"
+                        className="shop-check"
+                        disabled={cancelled}
+                        aria-pressed={purchased}
+                        aria-label={
+                          purchased
+                            ? `Merk «${row.name}» som ikke kjøpt`
+                            : `Merk «${row.name}» som kjøpt`
+                        }
+                        onClick={() => setStatus(row.id, purchased ? 'planned' : 'purchased')}
+                      >
+                        {purchased && <Check size={12} />}
+                      </button>
+
+                      <span className="shop-name">
+                        {row.name}
                         {row.supplier && <small>{row.supplier}</small>}
-                      </td>
-                      <td className="num tnum" data-label="Mengde">
+                      </span>
+
+                      {/* Quantity and unit price read as one fact — "8 sekk ×
+                          289,90 kr" is how a person says it — so they share a
+                          cell instead of two columns that each need a header. */}
+                      <span className="shop-spec tnum">
                         {formatQuantity(row.quantityMilli)} {row.unit}
-                      </td>
-                      <td className="num tnum" data-label="Enhetspris">
-                        {unitOre === null ? '—' : formatOreExact(unitOre)}
-                        {row.actualUnitPriceOre === null && row.estimatedUnitPriceOre !== null && (
-                          <small>estimert</small>
-                        )}
-                      </td>
-                      <td className="num tnum" data-label="Sum">{lineOre === null ? '—' : formatOreExact(lineOre)}</td>
-                      <td>
-                        <span className={`status-pill shopping-${row.status}`}>
-                          {statusLabels[row.status] ?? row.status}
-                        </span>
-                      </td>
-                      <td className="num">
-                        {row.status !== 'purchased' && row.status !== 'cancelled' && (
-                          <button
-                            type="button"
-                            className="row-action"
-                            onClick={() => setStatus(row.id, 'purchased')}
-                            aria-label={`Merk «${row.name}» som kjøpt`}
-                          >
-                            <Check size={14} />
-                          </button>
-                        )}
-                        {row.status !== 'cancelled' && (
-                          <button
-                            type="button"
-                            className="row-action"
-                            onClick={() => setStatus(row.id, 'cancelled')}
-                            aria-label={`Kanseller «${row.name}»`}
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
+                        {unitOre !== null && ` × ${formatOreExact(unitOre)}`}
+                      </span>
+
+                      {exception && <span className="shop-flag">{exception}</span>}
+
+                      <span className="shop-sum tnum">
+                        {lineOre === null ? '—' : formatOreExact(lineOre)}
+                      </span>
+
+                      {!cancelled && (
+                        <button
+                          type="button"
+                          className="shop-drop"
+                          onClick={() => setStatus(row.id, 'cancelled')}
+                          aria-label={`Kanseller «${row.name}»`}
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </li>
                   );
                 })}
-              </tbody>
-            </table>
-            )}
-
-            {rows.length > 0 && (
-            <dl className="shopping-totals">
-              <div>
-                <dt>Estimert</dt>
-                <dd className="tnum">{formatOre(list.totals.estimatedOre)}</dd>
-              </div>
-              <div>
-                <dt>Kjøpt</dt>
-                <dd className="tnum">{formatOre(list.totals.purchasedOre)}</dd>
-              </div>
-              <div>
-                <dt>Gjenstår</dt>
-                <dd className="tnum">{formatOre(list.totals.remainingOre)}</dd>
-              </div>
-              <div className="is-total">
-                <dt>Prognose</dt>
-                <dd className="tnum">{formatOre(list.totals.forecastOre)}</dd>
-              </div>
-            </dl>
-            )}
-
-            {list.totals.forecastOre > 0 && (
-              <p className="shopping-split">
-                <span className="tnum">{formatOre(list.totals.budgetedOre)}</span> er dekket av en
-                budsjettlinje, <span className="tnum">{formatOre(list.totals.unbudgetedOre)}</span> er ikke.
-                Summen av de to er prognosen, slik at ingen kostnad telles to ganger.
-              </p>
+              </ul>
             )}
 
             {addingTo === list.id ? (
               <form
-                className="shopping-add"
+                className="shop-add"
                 onSubmit={event => {
                   event.preventDefault();
                   void addItem(list.id, event.currentTarget);
                 }}
               >
                 <input name="name" placeholder="Produkt" required maxLength={200} aria-label="Produkt" />
-                <input name="quantity" placeholder="Mengde" defaultValue="1" aria-label="Mengde" />
-                <input name="unit" placeholder="stk" defaultValue="stk" aria-label="Enhet" />
-                <input name="estimatedUnitPrice" placeholder="Pris per enhet" aria-label="Estimert enhetspris" />
-                <button type="submit">Legg til</button>
-                <button type="button" className="ghost" onClick={() => setAddingTo(null)}>
-                  Avbryt
+                <input name="quantity" defaultValue="1" aria-label="Mengde" />
+                <input name="unit" defaultValue="stk" aria-label="Enhet" />
+                <input name="estimatedUnitPrice" placeholder="Pris" aria-label="Estimert enhetspris" />
+                <button type="submit" aria-label="Legg til produktet">
+                  <Plus size={14} />
+                </button>
+                <button type="button" className="ghost" onClick={() => setAddingTo(null)} aria-label="Avbryt">
+                  <X size={14} />
                 </button>
               </form>
             ) : (
-              <button type="button" className="inline-add-trigger" onClick={() => setAddingTo(list.id)}>
-                <Plus size={14} />
+              <button type="button" className="shop-add-trigger" onClick={() => setAddingTo(list.id)}>
+                <Plus size={13} />
                 Legg til produkt
               </button>
             )}
@@ -283,21 +274,31 @@ export function ProjectShopping({ projectId }: { projectId: string }) {
         );
       })}
 
-      <form className="shopping-new-list" onSubmit={createList}>
-        <label className="sr-only" htmlFor="new-list">
-          Ny innkjøpsliste
-        </label>
-        <input
-          id="new-list"
-          value={newListName}
-          onChange={event => setNewListName(event.target.value)}
-          placeholder="Ny liste, for eksempel «Materialer til steinmuren»"
-          maxLength={120}
-        />
-        <button type="submit" disabled={!newListName.trim()}>
-          Lag liste
-        </button>
-      </form>
+      {namingList ? (
+        <form className="shop-new-list" onSubmit={createList}>
+          <input
+            autoFocus
+            value={newListName}
+            onChange={event => setNewListName(event.target.value)}
+            placeholder="Navn på listen"
+            maxLength={120}
+            aria-label="Ny innkjøpsliste"
+          />
+          <button type="submit" disabled={!newListName.trim()}>
+            Lag
+          </button>
+          <button type="button" className="ghost" onClick={() => setNamingList(false)}>
+            Avbryt
+          </button>
+        </form>
+      ) : (
+        lists.length > 0 && (
+          <button type="button" className="shop-add-trigger is-list" onClick={() => setNamingList(true)}>
+            <Plus size={13} />
+            Ny liste
+          </button>
+        )
+      )}
     </div>
   );
 }
