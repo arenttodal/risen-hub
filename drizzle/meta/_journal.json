@@ -36,6 +36,13 @@
       "when": 1789941663165,
       "tag": "0004_broken_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1789982008015,
+      "tag": "0005_pale_tyrannus",
+      "breakpoints": true
     }
   ]
 }

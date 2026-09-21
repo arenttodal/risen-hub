@@ -8,6 +8,7 @@ import { projectShoppingTotals } from '@/lib/risen/services/shopping';
 import { formatOre } from '@/lib/risen/money';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
 import { ProjectShopping } from '@/components/risen/project-shopping';
+import { ProjectGallery } from '@/components/risen/project-gallery';
 import { EmptyState } from '@/components/risen/empty-state';
 import { money, statusLabels, visibilityLabels } from '@/components/risen/project-card';
 
@@ -97,12 +98,15 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             )}
           </div>
         </div>
-        {project.nextAction && (
-          <aside className="detail-next">
-            <span className="kicker">Neste steg</span>
-            <strong>{project.nextAction}</strong>
-          </aside>
-        )}
+        <div className="detail-aside">
+          <ProjectGallery projectId={project.id} projectName={project.name} />
+          {project.nextAction && (
+            <aside className="detail-next">
+              <span className="kicker">Neste steg</span>
+              <strong>{project.nextAction}</strong>
+            </aside>
+          )}
+        </div>
       </header>
 
       <section className="metric-row">

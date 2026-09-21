@@ -534,6 +534,61 @@ export const shoppingItems = sqliteTable(
   ],
 );
 
+/**
+ * Photographs and drawings belonging to a project.
+ *
+ * Two kinds, because they do two different jobs:
+ *
+ * - `current` is evidence. It is what the place looks like now, and it is a
+ *   document requirement in its own right — `Fotodokumentasjon` is asked for by
+ *   7 of the 16 imported funding schemes. It accumulates, it is dated, and it
+ *   is rarely browsed for pleasure.
+ * - `mockup` is the pitch. It is what the place is meant to become, it is what
+ *   the project should look like when you open it, and it is what a reviewer or
+ *   a donor is shown. There is usually one that matters most.
+ *
+ * The bytes live in R2 under `storageKey`; only the metadata is here. A row
+ * whose object has gone missing is a broken thumbnail, not a broken page.
+ */
+export const projectImages = sqliteTable(
+  'project_images',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    /** `current | mockup` */
+    kind: text('kind').notNull().default('current'),
+    /** Key of the object in the media bucket. Never a public URL. */
+    storageKey: text('storage_key').notNull(),
+    fileName: text('file_name').notNull(),
+    contentType: text('content_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    width: integer('width'),
+    height: integer('height'),
+    caption: text('caption'),
+    /** When the photo was taken, if known. Not the upload time. */
+    takenAt: text('taken_at'),
+    /**
+     * The one image that represents the project. At most one per project is
+     * enforced in the service, not here: SQLite cannot express "one true row
+     * per group" without a partial index this schema does not otherwise use.
+     */
+    isFeatured: integer('is_featured').notNull().default(0),
+    /** Optional link to the document requirement this photo helps satisfy. */
+    documentRequirementId: text('document_requirement_id'),
+    position: integer('position').notNull().default(0),
+    uploadedBy: text('uploaded_by'),
+    visibility: visibility(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  table => [
+    index('project_images_project').on(table.projectId, table.kind, table.position),
+    uniqueIndex('project_images_key').on(table.storageKey),
+  ],
+);
+
 /** Public preview RSVPs for the sample dugnad weekends on `/`. */
 export const rsvps = sqliteTable(
   'rsvps',
@@ -563,3 +618,4 @@ export type ShoppingList = typeof shoppingLists.$inferSelect;
 export type ShoppingItem = typeof shoppingItems.$inferSelect;
 export type DocumentRequirement = typeof documentRequirements.$inferSelect;
 export type ApplicationTemplate = typeof applicationTemplates.$inferSelect;
+export type ProjectImage = typeof projectImages.$inferSelect;
