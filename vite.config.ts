@@ -20,6 +20,11 @@ const realD1DatabaseId = process.env.CLOUDFLARE_D1_DATABASE_ID?.trim() || '';
 const d1DatabaseName =
   process.env.CLOUDFLARE_D1_DATABASE_NAME?.trim() || 'site-creator-d1';
 
+// The R2 bucket holding project images. Unlike D1, a bucket needs no id — the
+// name is the whole reference — so an unset binding is the only failure mode,
+// and `.openai/hosting.json` already guards that. See docs/MEDIA-SETUP.md.
+const r2BucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME?.trim() || 'risen-media';
+
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
 
@@ -43,7 +48,7 @@ export default defineConfig(async ({ command }) => {
     main: 'vinext/server/fetch-handler',
     compatibility_flags: ['nodejs_compat'],
     d1_databases: d1Bindings(isDev),
-    r2_buckets: r2 ? [{ binding: r2, bucket_name: 'site-creator-r2' }] : [],
+    r2_buckets: r2 ? [{ binding: r2, bucket_name: r2BucketName }] : [],
   };
 
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool

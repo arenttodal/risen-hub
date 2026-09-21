@@ -811,3 +811,98 @@
 .template-sections div { display: grid; gap: 5px; border-top: 1px solid var(--line2); padding-top: 14px; }
 .template-sections dt { font-size: 12.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mute); }
 .template-sections dd { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ink2); }
+
+/* ---------- Project gallery ---------- */
+/* The featured image sits above "Neste steg" in the header's right column,
+   which was near-empty before. The rest of the pictures live in the overlay,
+   which is what keeps the project page from filling up with thumbnails. */
+.detail-aside { flex: none; width: 280px; display: grid; gap: 12px; align-content: start; }
+.detail-aside .detail-next { max-width: none; width: 100%; }
+
+.gallery-card {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border: 1px solid var(--line);
+  border-radius: var(--r-in);
+  background: var(--card);
+  box-shadow: var(--sh);
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+  text-align: left;
+}
+.gallery-card:hover { border-color: var(--accent); }
+.gallery-card.has-image { background: var(--ink); }
+.gallery-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gallery-card-foot {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 18px 12px 9px;
+  background: linear-gradient(transparent, rgba(21, 21, 26, 0.72));
+}
+.gallery-card-foot .kicker { color: #F2F1EC; }
+.gallery-card-foot .tnum {
+  font-size: 12px; font-weight: 600; color: #F2F1EC;
+  background: rgba(255, 255, 255, 0.18); border-radius: 999px; padding: 2px 8px;
+}
+.gallery-card-empty { display: grid; justify-items: center; gap: 3px; padding: 18px; text-align: center; color: var(--faint); }
+.gallery-card-empty strong { font-size: 13.5px; font-weight: 600; color: var(--ink2); }
+.gallery-card-empty small { font-size: 12px; color: var(--mute); max-width: 190px; }
+
+.gallery-layer { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+.gallery-scrim { position: absolute; inset: 0; border: 0; background: rgba(21, 21, 26, 0.42); }
+.gallery-panel {
+  position: relative; width: min(1040px, 100%); max-height: 88vh; overflow: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r-card);
+  box-shadow: 0 20px 60px -20px rgba(21, 21, 26, 0.35); padding: 0 24px 22px;
+}
+.gallery-bar {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  position: sticky; top: 0; background: var(--card); padding: 20px 0 14px; z-index: 2;
+  border-bottom: 1px solid var(--line);
+}
+.gallery-bar h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; margin: 2px 0 0; }
+.gallery-bar > button { flex: none; border: 0; background: transparent; color: var(--mute); border-radius: 999px; padding: 6px; }
+.gallery-bar > button:hover { background: var(--bg); color: var(--ink); }
+
+.gallery-notice { margin: 16px 0 0; padding: 12px 15px; background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink); border-radius: var(--r-in); font-size: 13.5px; line-height: 1.55; }
+.gallery-notice code { font-size: 0.92em; background: rgba(0, 0, 0, 0.05); padding: 1px 5px; border-radius: 4px; }
+.gallery-errors { list-style: none; margin: 14px 0 0; padding: 11px 15px; background: var(--neg-bg); border: 1px solid #F5C9C2; border-radius: var(--r-in); color: #8C2318; font-size: 13px; display: grid; gap: 4px; }
+
+.gallery-sections { display: grid; gap: 22px; margin-top: 20px; }
+.gallery-section { border: 1px dashed transparent; border-radius: var(--r-in); padding: 2px; transition: background 0.12s; }
+.gallery-section.is-target { border-color: var(--accent); background: var(--accent-s); }
+.gallery-section > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 6px 8px 10px; border-bottom: 1px solid var(--line); }
+.gallery-section h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.gallery-section header p { margin: 3px 0 0; font-size: 12.5px; color: var(--mute); }
+.gallery-add { flex: none; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 15px; font-size: 13px; font-weight: 600; color: var(--ink2); cursor: pointer; }
+.gallery-add:hover { border-color: var(--accent); color: var(--accent); }
+.gallery-add input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.gallery-add.is-disabled { opacity: 0.5; cursor: not-allowed; }
+.gallery-drop { margin: 0; padding: 30px 12px; text-align: center; font-size: 13px; color: var(--faint); }
+
+.gallery-grid { list-style: none; margin: 12px 0 0; padding: 0 4px; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.gallery-grid li { border: 1px solid var(--line); border-radius: var(--r-in); overflow: hidden; background: var(--card); display: grid; }
+.gallery-grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--bg); }
+.gallery-item-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 8px 10px 2px; }
+.gallery-item-bar span { font-size: 12.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gallery-item-bar small { flex: none; font-size: 11.5px; color: var(--faint); }
+.gallery-item-actions { display: flex; align-items: center; gap: 5px; padding: 4px 8px 8px; }
+.gallery-item-actions .row-action[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-s); color: var(--accent); }
+.gallery-confirm { display: inline-flex; gap: 5px; margin-left: auto; }
+.gallery-confirm button { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 4px 11px; font-size: 12px; color: var(--mute); }
+.gallery-confirm .danger { border-color: #F5C9C2; background: var(--neg-bg); color: #8C2318; font-weight: 600; }
+.gallery-foot { margin: 20px 0 0; padding-top: 14px; border-top: 1px solid var(--line2); font-size: 12.5px; color: var(--mute); }
+
+@media (max-width: 680px) {
+  .detail-aside { width: 100%; }
+  .gallery-layer { padding: 0; }
+  .gallery-panel { width: 100%; max-height: 100vh; height: 100vh; border-radius: 0; border: 0; padding: 0 16px 18px; }
+  .gallery-section > header { display: grid; }
+  .gallery-add { justify-self: start; }
+  .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+.gallery-grid img.is-missing { object-fit: contain; background: var(--bg); padding: 30%; opacity: 0.35; }
+.gallery-item-missing { display: grid; place-items: center; aspect-ratio: 4 / 3; background: var(--bg); color: var(--faint); font-size: 12.5px; text-align: center; padding: 10px; }

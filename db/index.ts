@@ -30,3 +30,26 @@ export function getRawDb() {
   if (!env.DB) throw new Error('Database unavailable');
   return env.DB;
 }
+
+/**
+ * True when an R2 media bucket is bound to this worker.
+ *
+ * The binding name is `MEDIA`, set through the `r2` field in
+ * `.openai/hosting.json`. It is deliberately checked rather than assumed: image
+ * upload is the one feature that cannot degrade to a seed dataset, so the UI
+ * asks this and says plainly that storage is not connected instead of throwing
+ * a failed upload at someone.
+ */
+export function hasMedia(): boolean {
+  return Boolean((env as unknown as { MEDIA?: R2Bucket }).MEDIA);
+}
+
+export function getMedia(): R2Bucket {
+  const bucket = (env as unknown as { MEDIA?: R2Bucket }).MEDIA;
+  if (!bucket) {
+    throw new Error(
+      'Cloudflare R2 binding `MEDIA` is unavailable. Create a bucket and set the `r2` field in .openai/hosting.json to `MEDIA`.',
+    );
+  }
+  return bucket;
+}
