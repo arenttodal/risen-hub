@@ -16,6 +16,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildSeedSql } from './seed-sql.mjs';
+import { buildLegacyImportSql } from './legacy-import-sql.mjs';
 import { applyMigrations } from './migrations.mjs';
 
 const PERSIST = '.wrangler/state';
@@ -62,4 +63,20 @@ applyMigrations(run, execSql);
 execSql('seed', await buildSeedSql());
 const { seedPlaces, seedProjects, seedMilestones, seedWorkItems } = await import('../data/risen.ts');
 console.log(`✓ seeded ${seedPlaces.length} places, ${seedProjects.length} projects, ${seedMilestones.length} milestones, ${seedWorkItems.length} work items`);
+
+// 3. The legacy funding catalogue. Upserts on deterministic ids, so this is
+// safe to re-run and never overwrites research done since the last run.
+const { sql: legacySql, data: legacy } = buildLegacyImportSql();
+execSql('legacy-import', legacySql);
+console.log(
+  `✓ imported ${legacy.angles.length} angles, ${legacy.schemes.length} schemes, ` +
+    `${legacy.documents.length} document requirements, ${legacy.templates.length} templates`,
+);
+if (legacy.undocumented.length > 0) {
+  console.log(
+    `  ${legacy.undocumented.length} requirements are referenced by a scheme but never described in the archive: ` +
+      `${legacy.undocumented.join(', ')}`,
+  );
+}
+
 console.log('\nLocal D1 is ready. Restart `npm run dev` if it is already running.');

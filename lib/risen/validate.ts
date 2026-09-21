@@ -12,9 +12,9 @@ import type { WorkItem } from './types';
 
 export type Result<T> = { ok: true; value: T } | { ok: false; errors: string[] };
 
-const WORK_TYPES = ['task', 'repair', 'purchase', 'dugnad'] as const;
+const WORK_TYPES = ['task', 'repair', 'purchase', 'dugnad', 'inspection', 'documentation', 'decision'] as const;
 const WORK_PRIORITIES = ['urgent', 'high', 'normal', 'low'] as const;
-const WORK_STATUSES = ['inbox', 'ready', 'doing', 'blocked', 'done'] as const;
+const WORK_STATUSES = ['inbox', 'planned', 'ready', 'in_progress', 'blocked', 'done', 'cancelled'] as const;
 const VISIBILITIES = ['private', 'members', 'public'] as const;
 const PROJECT_STATUSES = ['active', 'planning', 'paused', 'complete'] as const;
 
@@ -131,11 +131,24 @@ export function parseNewWorkItem(input: unknown): Result<NewWorkItem> {
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
 }
 
+const WEATHER = ['any', 'dry', 'indoor', 'frost_free'] as const;
+
 export interface WorkItemPatch {
+  title?: string;
+  detail?: string | null;
   status?: WorkItem['status'];
   priority?: WorkItem['priority'];
+  type?: WorkItem['type'];
   assignee?: string | null;
+  projectId?: string | null;
+  placeId?: string | null;
+  startAt?: string | null;
   dueDate?: string | null;
+  estimatedHours?: number | null;
+  requiredPeople?: number | null;
+  suitableForDugnad?: boolean;
+  weatherDependency?: WorkItem['weatherDependency'];
+  position?: number;
 }
 
 /** Only the fields present are changed, so a patch never blanks what it omits. */
@@ -144,13 +157,49 @@ export function parseWorkItemPatch(input: unknown): Result<WorkItemPatch> {
   const body = asObject(input, errors);
   const patch: WorkItemPatch = {};
 
+  if ('title' in body) {
+    const title = text(body.title, 'Tittel', 200, errors);
+    if (title !== null) patch.title = title;
+  }
+  if ('detail' in body) patch.detail = text(body.detail, 'Beskrivelse', 4000, errors, false);
   if ('status' in body) patch.status = oneOf(body.status, 'Status', WORK_STATUSES, errors, 'inbox');
   if ('priority' in body) patch.priority = oneOf(body.priority, 'Prioritet', WORK_PRIORITIES, errors, 'normal');
+  if ('type' in body) patch.type = oneOf(body.type, 'Type', WORK_TYPES, errors, 'task');
   if ('assignee' in body) patch.assignee = text(body.assignee, 'Ansvarlig', 100, errors, false);
+  if ('projectId' in body) patch.projectId = text(body.projectId, 'Prosjekt', 64, errors, false);
+  if ('placeId' in body) patch.placeId = text(body.placeId, 'Sted', 64, errors, false);
+  if ('startAt' in body) patch.startAt = isoDate(body.startAt, 'Startdato', errors);
   if ('dueDate' in body) patch.dueDate = isoDate(body.dueDate, 'Frist', errors);
+  if ('estimatedHours' in body) patch.estimatedHours = wholeNumber(body.estimatedHours, 'Anslått tid', 0, 1000, errors);
+  if ('requiredPeople' in body) patch.requiredPeople = wholeNumber(body.requiredPeople, 'Antall personer', 0, 100, errors);
+  if ('suitableForDugnad' in body) patch.suitableForDugnad = body.suitableForDugnad === true;
+  if ('weatherDependency' in body) {
+    patch.weatherDependency = body.weatherDependency === null
+      ? null
+      : oneOf(body.weatherDependency, 'Væravhengighet', WEATHER, errors, 'any');
+  }
+  if ('position' in body) {
+    const position = wholeNumber(body.position, 'Posisjon', 0, 100000, errors);
+    if (position !== null) patch.position = position;
+  }
 
   if (Object.keys(patch).length === 0) errors.push('Ingen felter å oppdatere');
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: patch };
+}
+
+export interface CommentInput {
+  body: string;
+  authorName: string | null;
+}
+
+export function parseComment(input: unknown): Result<CommentInput> {
+  const errors: string[] = [];
+  const raw = asObject(input, errors);
+  const value: CommentInput = {
+    body: text(raw.body, 'Kommentar', 4000, errors) ?? '',
+    authorName: text(raw.authorName, 'Navn', 100, errors, false),
+  };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
 }
 
 export interface ProjectPatch {
@@ -173,4 +222,160 @@ export function parseProjectPatch(input: unknown): Result<ProjectPatch> {
 
   if (Object.keys(patch).length === 0) errors.push('Ingen felter å oppdatere');
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: patch };
+}
+
+// ---------------------------------------------------------------------------
+// Shopping
+// ---------------------------------------------------------------------------
+
+const SHOPPING_STATUSES = ['planned', 'needs_decision', 'ready', 'purchased', 'cancelled'] as const;
+
+export interface NewShoppingListInput {
+  name: string;
+  workItemId: string | null;
+}
+
+export function parseNewShoppingList(input: unknown): Result<NewShoppingListInput> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const value: NewShoppingListInput = {
+    name: text(body.name, 'Navn', 120, errors) ?? '',
+    workItemId: text(body.workItemId, 'Oppgave', 64, errors, false),
+  };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
+}
+
+export interface ShoppingItemInput {
+  name: string;
+  quantityMilli: number;
+  unit: string;
+  estimatedUnitPriceOre: number | null;
+  actualUnitPriceOre: number | null;
+  supplier: string | null;
+  productUrl: string | null;
+  budgetLineId: string | null;
+  status: (typeof SHOPPING_STATUSES)[number];
+}
+
+/**
+ * Prices arrive as kroner strings from the form and are converted to whole øre
+ * here, at the boundary. Nothing downstream ever sees a decimal price, so no
+ * total is ever computed in binary floating point.
+ */
+function priceOre(value: unknown, field: string, errors: string[]): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  const normalised = String(value).trim().replaceAll(' ', '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalised)) {
+    errors.push(`${field} må være et beløp, for eksempel 289,90`);
+    return null;
+  }
+  return Math.round(Number(normalised) * 100);
+}
+
+function quantityMilli(value: unknown, errors: string[]): number {
+  if (value === undefined || value === null || value === '') return 1000;
+  const normalised = String(value).trim().replace(',', '.');
+  if (!/^\d+(\.\d{1,3})?$/.test(normalised)) {
+    errors.push('Mengde må være et positivt tall, for eksempel 2,5');
+    return 1000;
+  }
+  const scaled = Math.round(Number(normalised) * 1000);
+  if (scaled <= 0) {
+    errors.push('Mengde må være større enn null');
+    return 1000;
+  }
+  return scaled;
+}
+
+export function parseShoppingItem(input: unknown): Result<ShoppingItemInput> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const value: ShoppingItemInput = {
+    name: text(body.name, 'Produkt', 200, errors) ?? '',
+    quantityMilli: quantityMilli(body.quantity, errors),
+    unit: text(body.unit, 'Enhet', 20, errors, false) ?? 'stk',
+    estimatedUnitPriceOre: priceOre(body.estimatedUnitPrice, 'Estimert pris', errors),
+    actualUnitPriceOre: priceOre(body.actualUnitPrice, 'Faktisk pris', errors),
+    supplier: text(body.supplier, 'Leverandør', 120, errors, false),
+    productUrl: text(body.productUrl, 'Lenke', 500, errors, false),
+    budgetLineId: text(body.budgetLineId, 'Budsjettpost', 64, errors, false),
+    status: oneOf(body.status, 'Status', SHOPPING_STATUSES, errors, 'planned'),
+  };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value };
+}
+
+export interface ShoppingItemPatch {
+  status?: ShoppingItemInput['status'];
+  actualUnitPriceOre?: number | null;
+  estimatedUnitPriceOre?: number | null;
+  quantityMilli?: number;
+  name?: string;
+}
+
+export function parseShoppingItemPatch(input: unknown): Result<ShoppingItemPatch> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const patch: ShoppingItemPatch = {};
+
+  if ('status' in body) patch.status = oneOf(body.status, 'Status', SHOPPING_STATUSES, errors, 'planned');
+  if ('actualUnitPrice' in body) patch.actualUnitPriceOre = priceOre(body.actualUnitPrice, 'Faktisk pris', errors);
+  if ('estimatedUnitPrice' in body) patch.estimatedUnitPriceOre = priceOre(body.estimatedUnitPrice, 'Estimert pris', errors);
+  if ('quantity' in body) patch.quantityMilli = quantityMilli(body.quantity, errors);
+  if ('name' in body) {
+    const name = text(body.name, 'Produkt', 200, errors);
+    if (name !== null) patch.name = name;
+  }
+
+  if (Object.keys(patch).length === 0) errors.push('Ingen felter å oppdatere');
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: patch };
+}
+
+export interface WorkMoveInput {
+  id: string;
+  status: (typeof WORK_STATUSES)[number];
+  position: number;
+}
+
+/**
+ * A batch of board moves.
+ *
+ * The client plans the whole batch, but nothing here trusts it: every id,
+ * status and position is re-validated, and a batch with one bad entry is
+ * rejected whole rather than applied in part. A half-applied reorder is worse
+ * than a refused one.
+ */
+export function parseWorkMoves(input: unknown): Result<WorkMoveInput[]> {
+  const errors: string[] = [];
+  const body = asObject(input, errors);
+  const raw = Array.isArray(body.moves) ? body.moves : null;
+  if (!raw) {
+    errors.push('Ingen flyttinger å utføre');
+    return { ok: false, errors };
+  }
+  if (raw.length > 200) {
+    errors.push('For mange flyttinger i én forespørsel');
+    return { ok: false, errors };
+  }
+
+  const seen = new Set<string>();
+  const moves: WorkMoveInput[] = [];
+  for (const entry of raw) {
+    const move = asObject(entry, errors);
+    const id = text(move.id, 'Sak', 64, errors);
+    if (id === null) continue;
+    if (seen.has(id)) {
+      errors.push('Samme sak flyttes to ganger i samme forespørsel');
+      continue;
+    }
+    seen.add(id);
+    const position = wholeNumber(move.position, 'Posisjon', 0, 100000, errors);
+    moves.push({
+      id,
+      status: oneOf(move.status, 'Status', WORK_STATUSES, errors, 'inbox'),
+      position: position ?? 0,
+    });
+  }
+
+  if (moves.length === 0) errors.push('Ingen flyttinger å utføre');
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: moves };
 }

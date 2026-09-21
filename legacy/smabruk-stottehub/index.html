@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Småbruk Støttehub — Rauma</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div><strong>Støttehub</strong><span>Småbruk · Rauma</span></div>
+      </div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard">Oversikt</button>
+        <button class="nav-item" data-view="farm">Gårdsprofil</button>
+        <button class="nav-item" data-view="projects">6 prosjektområder</button>
+        <button class="nav-item" data-view="funding">Støtteordninger</button>
+        <button class="nav-item" data-view="applications">Søknadsverksted</button>
+        <button class="nav-item" data-view="budgets">Budsjett</button>
+        <button class="nav-item" data-view="documents">Dokumenter</button>
+        <button class="nav-item" data-view="calendar">Frister</button>
+        <button class="nav-item" data-view="ai">AI-assistent</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="sync-dot"></div>
+        <span>Data lagres lokalt i nettleseren</span>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Finansiering · kultur · bygningsvern · frivillighet</p>
+          <h1 id="viewTitle">Finansieringsoversikt</h1>
+        </div>
+        <div class="top-actions">
+          <button id="exportBtn" class="ghost">Eksporter data</button>
+          <label class="import-label ghost">Importer<input id="importInput" type="file" accept="application/json" hidden></label>
+          <button id="quickAddBtn" class="primary">+ Nytt tiltak</button>
+        </div>
+      </header>
+
+      <section id="alertStrip" class="alert-strip"></section>
+      <section id="view" class="view"></section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button id="modalClose" class="modal-close">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <template id="toastTpl"><div class="toast"></div></template>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -146,10 +146,10 @@ export const seedMilestones: Milestone[] = [
 ];
 
 export const seedWorkItems: WorkItem[] = [
-  { id: 'w1', projectId: 'workshop', placeId: 'place-verkstedomrade', milestoneId: 'm-workshop-1', title: 'Dokumenter varme arbeider i gammel låve', detail: 'Bilder, plassering og omfang. Grunnlag for både søknad og risikovurdering.', type: 'task', priority: 'high', status: 'ready', assignee: 'Walid', estimatedHours: 3, dueDate: '2026-09-30', visibility: 'members' },
-  { id: 'w2', projectId: 'barn', placeId: 'place-laven', milestoneId: null, title: 'Reparer kjøkkendør', detail: null, type: 'repair', priority: 'normal', status: 'inbox', assignee: null, estimatedHours: 2, dueDate: null, visibility: 'private' },
-  { id: 'w3', projectId: 'barn', placeId: 'place-laven', milestoneId: 'm-barn-2', title: 'Samle historiske bilder og gamle kart', detail: 'Brukes i vernebegrunnelsen og som vedlegg til søknader.', type: 'task', priority: 'high', status: 'doing', assignee: 'Arn', estimatedHours: 6, dueDate: '2026-10-10', visibility: 'members' },
-  { id: 'w4', projectId: 'wall', placeId: 'place-steinmuren', milestoneId: 'm-wall-2', title: 'Lag innkjøpsliste for neste dugnad', detail: null, type: 'purchase', priority: 'normal', status: 'ready', assignee: null, estimatedHours: 1, dueDate: null, visibility: 'members' },
+  { id: 'w1', projectId: 'workshop', placeId: 'place-verkstedomrade', milestoneId: 'm-workshop-1', title: 'Dokumenter varme arbeider i gammel låve', detail: 'Bilder, plassering og omfang. Grunnlag for både søknad og risikovurdering.', type: 'task', priority: 'high', status: 'ready', assignee: 'Walid', estimatedHours: 3, dueDate: '2026-09-30', requiredPeople: 1, suitableForDugnad: false, weatherDependency: 'any', parentId: null, startAt: null, position: 1, visibility: 'members' },
+  { id: 'w2', projectId: 'barn', placeId: 'place-laven', milestoneId: null, title: 'Reparer kjøkkendør', detail: null, type: 'repair', priority: 'normal', status: 'inbox', assignee: null, estimatedHours: 2, dueDate: null, requiredPeople: 1, suitableForDugnad: true, weatherDependency: 'indoor', parentId: null, startAt: null, position: 2, visibility: 'private' },
+  { id: 'w3', projectId: 'barn', placeId: 'place-laven', milestoneId: 'm-barn-2', title: 'Samle historiske bilder og gamle kart', detail: 'Brukes i vernebegrunnelsen og som vedlegg til søknader.', type: 'task', priority: 'high', status: 'in_progress', assignee: 'Arn', estimatedHours: 6, dueDate: '2026-10-10', requiredPeople: 1, suitableForDugnad: false, weatherDependency: 'indoor', parentId: null, startAt: null, position: 3, visibility: 'members' },
+  { id: 'w4', projectId: 'wall', placeId: 'place-steinmuren', milestoneId: 'm-wall-2', title: 'Lag innkjøpsliste for neste dugnad', detail: null, type: 'purchase', priority: 'normal', status: 'ready', assignee: null, estimatedHours: 1, dueDate: null, requiredPeople: 2, suitableForDugnad: true, weatherDependency: 'dry', parentId: null, startAt: null, position: 4, visibility: 'members' },
 ];
 
 /**
@@ -161,12 +161,22 @@ export const seedWorkItems: WorkItem[] = [
  * interface labels them accordingly. Fill in the source and the date before
  * anyone plans around a date here.
  */
-export const seedFundingSchemes: FundingScheme[] = [
-  { id: 'fs-teft', name: 'TEFT', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 1. oktober 2026. Ikke bekreftet.', deadlineAt: '2026-10-01', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
-  { id: 'fs-kulturfond', name: 'Regionalt kulturfond', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 15. januar 2027. Ikke bekreftet.', deadlineAt: '2027-01-15', verifiedAt: null, status: 'unverified', projectId: 'festival', visibility: 'members' },
-  { id: 'fs-spillemidler', name: 'Spillemidler kulturarena', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 15. februar 2027. Ikke bekreftet.', deadlineAt: '2027-02-15', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
-  { id: 'fs-kulturrom', name: 'Kulturrom / Gjenklang', provider: null, sourceUrl: null, eligibilitySummary: 'Antatt frist 1. mars 2027. Ikke bekreftet.', deadlineAt: '2027-03-01', verifiedAt: null, status: 'unverified', projectId: 'barn', visibility: 'members' },
-];
+/**
+ * Deliberately empty.
+ *
+ * This used to hold four invented placeholders — TEFT, Regionalt kulturfond,
+ * Spillemidler kulturarena and Kulturrom / Gjenklang — with no source URL and
+ * summaries that said *Antatt frist … Ikke bekreftet*. All four now exist for
+ * real, with real deadlines and real source URLs, in the catalogue imported
+ * from `legacy/smabruk-stottehub/`. Keeping both meant the same funder appeared
+ * twice, once fabricated, which is exactly the duplicate source of truth
+ * CLAUDE.md rule 3 forbids.
+ *
+ * Rows already written to a database are left alone — the import deletes
+ * nothing. docs/LEGACY-IMPORT-INVENTORY.md says how to retire them by hand.
+ * Run `npm run db:local` to get the real catalogue.
+ */
+export const seedFundingSchemes: FundingScheme[] = [];
 
 /** Idea bank. Classification follows PLATFORM-SPEC.md section 6. */
 export const seedFundingAngles: FundingAngle[] = [

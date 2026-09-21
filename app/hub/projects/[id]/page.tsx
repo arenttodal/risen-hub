@@ -4,7 +4,10 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Check, CircleDashed, CircleDot, MapPin } from 'lucide-react';
 import { getProject, listMilestones, listPlaces, listWorkItems } from '@/lib/risen/repository';
 import { fundedShare, type Milestone, type WorkItem } from '@/lib/risen/types';
+import { projectShoppingTotals } from '@/lib/risen/services/shopping';
+import { formatOre } from '@/lib/risen/money';
 import { DataSourceNotice } from '@/components/risen/data-source-notice';
+import { ProjectShopping } from '@/components/risen/project-shopping';
 import { EmptyState } from '@/components/risen/empty-state';
 import { money, statusLabels, visibilityLabels } from '@/components/risen/project-card';
 
@@ -30,14 +33,19 @@ const workTypeLabels: Record<WorkItem['type'], string> = {
   repair: 'Reparasjon',
   purchase: 'Innkjøp',
   dugnad: 'Dugnad',
+  inspection: 'Befaring',
+  documentation: 'Dokumentasjon',
+  decision: 'Beslutning',
 };
 
 const workStatusLabels: Record<WorkItem['status'], string> = {
   inbox: 'Innboks',
+  planned: 'Planlagt',
   ready: 'Klar',
-  doing: 'Pågår',
+  in_progress: 'Pågår',
   blocked: 'Blokkert',
   done: 'Ferdig',
+  cancelled: 'Avlyst',
 };
 
 function MilestoneIcon({ status }: { status: Milestone['status'] }) {
@@ -51,10 +59,11 @@ export default async function ProjectDetailPage({ params }: PageProps) {
   const { data: project, source, error } = await getProject(id);
   if (!project) notFound();
 
-  const [{ data: milestones }, { data: work }, { data: places }] = await Promise.all([
+  const [{ data: milestones }, { data: work }, { data: places }, shopping] = await Promise.all([
     listMilestones(project.id),
     listWorkItems(project.id),
     listPlaces(),
+    projectShoppingTotals(project.id),
   ]);
 
   const place = places.find(candidate => candidate.id === project.placeId);
@@ -178,6 +187,39 @@ export default async function ProjectDetailPage({ params }: PageProps) {
           )}
         </section>
       </div>
+
+      <section className="hub-panel">
+        <div className="panel-heading">
+          <div>
+            <span className="kicker">Innkjøp</span>
+            <h3>Materialer og kostnader</h3>
+          </div>
+          {shopping.itemCount > 0 && (
+            <span className="count-tag tnum">{formatOre(shopping.forecastOre)} i prognose</span>
+          )}
+        </div>
+        {shopping.itemCount > 0 && (
+          <dl className="shopping-totals">
+            <div>
+              <dt>Estimert</dt>
+              <dd className="tnum">{formatOre(shopping.estimatedOre)}</dd>
+            </div>
+            <div>
+              <dt>Kjøpt</dt>
+              <dd className="tnum">{formatOre(shopping.purchasedOre)}</dd>
+            </div>
+            <div>
+              <dt>Gjenstår</dt>
+              <dd className="tnum">{formatOre(shopping.remainingOre)}</dd>
+            </div>
+            <div className="is-total">
+              <dt>Prosjektet totalt</dt>
+              <dd className="tnum">{formatOre(shopping.forecastOre)}</dd>
+            </div>
+          </dl>
+        )}
+        <ProjectShopping projectId={project.id} />
+      </section>
 
       <div className="detail-pending">
         <EmptyState

@@ -17,7 +17,8 @@
     "db:local": "node scripts/d1-local.mjs",
     "db:remote": "node scripts/d1-remote.mjs",
     "db:seed-sql": "node scripts/seed-sql.mjs",
-    "db:console-sql": "node scripts/console-sql.mjs"
+    "db:console-sql": "node scripts/console-sql.mjs",
+    "db:legacy-sql": "node scripts/legacy-import-sql.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

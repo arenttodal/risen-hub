@@ -1,8 +1,12 @@
 import { asc, count, eq, or } from 'drizzle-orm';
 import { tryGetDb } from '@/db';
 import {
+  applicationTemplates,
+  documentRequirements,
   events,
   fundingAngleProjects,
+  fundingSchemeAngles,
+  fundingSchemeDocuments,
   fundingAngles,
   fundingSchemes,
   members,
@@ -96,7 +100,14 @@ function toWorkItem(row: typeof workItems.$inferSelect): WorkItem {
     status: row.status as WorkItem['status'],
     assignee: row.assignee,
     estimatedHours: row.estimatedHours,
+    requiredPeople: row.requiredPeople,
+    // SQLite has no boolean; 0/1 is narrowed here rather than leaking outward.
+    suitableForDugnad: row.suitableForDugnad === 1,
+    weatherDependency: row.weatherDependency as WorkItem['weatherDependency'],
+    parentId: row.parentId,
+    startAt: row.startAt,
     dueDate: row.dueDate,
+    position: row.position,
     visibility: row.visibility as WorkItem['visibility'],
   };
 }
@@ -212,6 +223,11 @@ function toScheme(row: typeof fundingSchemes.$inferSelect): FundingScheme {
     status: row.status as FundingScheme['status'],
     projectId: row.projectId,
     visibility: row.visibility as FundingScheme['visibility'],
+    cycle: row.cycle,
+    supportRate: row.supportRate,
+    matchRule: row.matchRule,
+    priorityNote: row.priorityNote,
+    provenance: row.provenance,
   };
 }
 
@@ -235,7 +251,7 @@ export async function listFundingAngles(): Promise<Loaded<FundingAngle[]>> {
   if (!db) return seeded(seedFundingAngles);
   try {
     const [rows, links] = await Promise.all([
-      db.select().from(fundingAngles).orderBy(asc(fundingAngles.id)),
+      db.select().from(fundingAngles).orderBy(asc(fundingAngles.position), asc(fundingAngles.id)),
       db.select().from(fundingAngleProjects),
     ]);
     const data = rows.map(row => ({
@@ -248,6 +264,8 @@ export async function listFundingAngles(): Promise<Loaded<FundingAngle[]>> {
       verifiedAt: row.verifiedAt,
       projectIds: links.filter(link => link.angleId === row.id).map(link => link.projectId),
       visibility: row.visibility as FundingAngle['visibility'],
+      tags: row.tags,
+      provenance: row.provenance,
     }));
     return { data, source: 'database' };
   } catch (error) {
@@ -333,5 +351,149 @@ export async function listProposals(): Promise<Loaded<Proposal[]>> {
     };
   } catch (error) {
     return seeded(seedProposals, describe(error));
+  }
+}
+
+/** One work item by id, for the detail panel. */
+export async function getWorkItem(id: string): Promise<WorkItem | null> {
+  const db = tryGetDb();
+  if (!db) return seedWorkItems.find(item => item.id === id) ?? null;
+  const rows = await db.select().from(workItems).where(eq(workItems.id, id)).limit(1);
+  return rows.length > 0 ? toWorkItem(rows[0]) : null;
+}
+
+export interface SchemeRequirement {
+  id: string;
+  name: string;
+  description: string | null;
+  /** `catalogued | referenced | local` — see db/schema.ts. */
+  source: string;
+  /** Scheme ids that ask for this document. */
+  schemeIds: string[];
+}
+
+/**
+ * Every document requirement, with the schemes that ask for it.
+ *
+ * Sorted by how many schemes want it: a paper five funders all need is worth
+ * making before one only a single funder asks for, and that ordering is the
+ * whole reason to show this list rather than leave it inside each scheme.
+ */
+export async function listDocumentRequirements(): Promise<Loaded<SchemeRequirement[]>> {
+  const db = tryGetDb();
+  if (!db) return seeded([]);
+  try {
+    const [rows, links] = await Promise.all([
+      db.select().from(documentRequirements),
+      db.select().from(fundingSchemeDocuments),
+    ]);
+    const data = rows
+      .map(row => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        source: row.source,
+        schemeIds: links.filter(link => link.documentId === row.id).map(link => link.schemeId),
+      }))
+      .sort(
+        (a, b) => b.schemeIds.length - a.schemeIds.length || a.name.localeCompare(b.name, 'nb'),
+      );
+    return { data, source: 'database' };
+  } catch (error) {
+    return seeded([], describe(error));
+  }
+}
+
+/** Which angles argue for which schemes. Empty when the tables are not there yet. */
+export async function listSchemeAngleLinks(): Promise<{ schemeId: string; angleId: string }[]> {
+  const db = tryGetDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(fundingSchemeAngles);
+  } catch {
+    return [];
+  }
+}
+
+export interface SchemeDetail {
+  scheme: FundingScheme;
+  requirements: { id: string; name: string; description: string | null; source: string }[];
+  angles: FundingAngle[];
+  template: { id: string; title: string; sections: Record<string, string> } | null;
+}
+
+/**
+ * One scheme with everything attached to it.
+ *
+ * The template's `sections` is stored as JSON text. A malformed one yields a
+ * null template rather than a thrown page: a broken boilerplate is a nuisance,
+ * a scheme you cannot open at all is a blocker.
+ */
+export async function getSchemeDetail(id: string): Promise<Loaded<SchemeDetail | null>> {
+  const db = tryGetDb();
+  if (!db) return seeded(null);
+  try {
+    const rows = await db.select().from(fundingSchemes).where(eq(fundingSchemes.id, id)).limit(1);
+    if (rows.length === 0) return { data: null, source: 'database' };
+    const scheme = toScheme(rows[0]);
+
+    const [documentLinks, angleLinks] = await Promise.all([
+      db.select().from(fundingSchemeDocuments).where(eq(fundingSchemeDocuments.schemeId, id)),
+      db.select().from(fundingSchemeAngles).where(eq(fundingSchemeAngles.schemeId, id)),
+    ]);
+
+    const documentIds = new Set(documentLinks.map(link => link.documentId));
+    const angleIds = new Set(angleLinks.map(link => link.angleId));
+
+    const [allDocuments, allAngles, templates] = await Promise.all([
+      documentIds.size > 0 ? db.select().from(documentRequirements) : Promise.resolve([]),
+      angleIds.size > 0 ? db.select().from(fundingAngles) : Promise.resolve([]),
+      rows[0].templateKey
+        ? db.select().from(applicationTemplates).where(eq(applicationTemplates.legacyId, rows[0].templateKey))
+        : Promise.resolve([]),
+    ]);
+
+    let template: SchemeDetail['template'] = null;
+    if (templates.length > 0) {
+      try {
+        template = {
+          id: templates[0].id,
+          title: templates[0].title,
+          sections: JSON.parse(templates[0].sections) as Record<string, string>,
+        };
+      } catch {
+        template = null;
+      }
+    }
+
+    return {
+      data: {
+        scheme,
+        requirements: allDocuments
+          .filter(row => documentIds.has(row.id))
+          .map(row => ({ id: row.id, name: row.name, description: row.description, source: row.source }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'nb')),
+        angles: allAngles
+          .filter(row => angleIds.has(row.id))
+          .sort((a, b) => a.position - b.position)
+          .map(row => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            strength: row.strength as FundingAngle['strength'],
+            missing: row.missing,
+            sourceUrl: row.sourceUrl,
+            verifiedAt: row.verifiedAt,
+            projectIds: [],
+            visibility: row.visibility as FundingAngle['visibility'],
+            tags: row.tags,
+            provenance: row.provenance,
+          })),
+        template,
+      },
+      source: 'database',
+    };
+  } catch (error) {
+    return seeded(null, describe(error));
   }
 }

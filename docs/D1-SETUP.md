@@ -115,11 +115,29 @@ copy.
 | 1 | [`schema-00.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-00.sql) | The dugnad sign-up table |
 | 2 | [`schema-01.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-01.sql) | Projects, places, milestones, work items, activity log |
 | 3 | [`schema-02.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-02.sql) | Funding, events, members, proposals |
-| 4 | [`seed-01.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/seed-01.sql) | Demo records, part 1 — **optional** |
-| 5 | [`seed-02.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/seed-02.sql) | Demo records, part 2 — **optional** |
+| 4 | [`schema-03.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-03.sql) | Work item detail, comments, labels, shopping lists |
+| 5 | [`schema-04.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/schema-04.sql) | Funding catalogue: document requirements and application templates |
+| 6 | [`seed-01.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/seed-01.sql) | Demo records, part 1 — **optional** |
+| 7 | [`seed-02.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/seed-02.sql) | Demo records, part 2 — **optional** |
+| 8 | [`legacy-01.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-01.sql) | Funding catalogue, part 1 of 9 — **optional** |
+| 9 | [`legacy-02.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-02.sql) | Funding catalogue, part 2 of 9 — **optional** |
+| 10 | [`legacy-03.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-03.sql) | Funding catalogue, part 3 of 9 — **optional** |
+| 11 | [`legacy-04.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-04.sql) | Funding catalogue, part 4 of 9 — **optional** |
+| 12 | [`legacy-05.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-05.sql) | Funding catalogue, part 5 of 9 — **optional** |
+| 13 | [`legacy-06.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-06.sql) | Funding catalogue, part 6 of 9 — **optional** |
+| 14 | [`legacy-07.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-07.sql) | Funding catalogue, part 7 of 9 — **optional** |
+| 15 | [`legacy-08.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-08.sql) | Funding catalogue, part 8 of 9 — **optional** |
+| 16 | [`legacy-09.sql`](https://github.com/arenttodal/risen-hub/blob/main/drizzle/console/legacy-09.sql) | Funding catalogue, part 9 of 9 — **optional** |
 
-Skip 4 and 5 if you would rather start with an empty Risen. You can run them
-later.
+Steps 6 and 7 are demo records. Steps 8 onwards are the real funding catalogue
+imported from the old Småbruk Støttehub — 16 schemes with their deadlines,
+source URLs and document requirements. Both sets are optional and can be run
+later; skip them if you would rather start with an empty Risen.
+
+**That is 16 separate pastes.** If you have a terminal, Route B below does
+the whole thing in one command and is much less tedious. See
+`docs/LEGACY-IMPORT-INVENTORY.md` for what the funding catalogue contains and
+where it came from.
 
 > **Use the files in `drizzle/console/`, not the numbered ones in `drizzle/`.**
 > The originals carry `--> statement-breakpoint` markers. In SQL `--` starts a
@@ -293,11 +311,18 @@ This part is in the browser regardless — follow [A2](#a2-tell-the-site-the-id)
 npm run db:remote -- --database risen-hub --confirm
 ```
 
-To include the demo projects:
+To include the demo projects and the real funding catalogue:
 
 ```bash
-npm run db:remote -- --database risen-hub --confirm --seed
+npm run db:remote -- --database risen-hub --confirm --seed --legacy
 ```
+
+`--legacy` imports the 16 funding schemes recovered from the old Småbruk
+Støttehub, with their deadlines, source URLs, document requirements and
+application templates. Every row lands **unverified** and carries the date the
+archive was captured — 8 September 2026 — so nothing on screen claims to be
+current research. It upserts and deletes nothing, so it is safe to re-run; see
+`docs/LEGACY-IMPORT-INVENTORY.md`.
 
 The `--` after the script name is required; it passes the options through to
 the script rather than to npm.

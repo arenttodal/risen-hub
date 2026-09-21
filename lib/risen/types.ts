@@ -9,9 +9,30 @@ export type ProjectStatus = 'active' | 'planning' | 'paused' | 'complete';
 export type MilestoneStatus = 'planned' | 'next' | 'doing' | 'complete';
 export type PlaceKind = 'building' | 'area' | 'structure' | 'infrastructure';
 export type PlaceCondition = 'unknown' | 'good' | 'fair' | 'poor' | 'critical';
-export type WorkType = 'task' | 'repair' | 'purchase' | 'dugnad';
+export type WorkType =
+  | 'task'
+  | 'repair'
+  | 'purchase'
+  | 'dugnad'
+  | 'inspection'
+  | 'documentation'
+  | 'decision';
 export type WorkPriority = 'urgent' | 'high' | 'normal' | 'low';
-export type WorkStatus = 'inbox' | 'ready' | 'doing' | 'blocked' | 'done';
+/**
+ * The work status machine. `planned` sits between capture and readiness;
+ * `cancelled` records that something was dropped rather than finished, which a
+ * delete could not.
+ */
+export type WorkStatus =
+  | 'inbox'
+  | 'planned'
+  | 'ready'
+  | 'in_progress'
+  | 'blocked'
+  | 'done'
+  | 'cancelled';
+
+export type WeatherDependency = 'any' | 'dry' | 'indoor' | 'frost_free';
 export type ActorRole = 'admin' | 'member' | 'volunteer' | 'public' | 'system';
 
 export interface Place {
@@ -63,10 +84,28 @@ export interface WorkItem {
   priority: WorkPriority;
   status: WorkStatus;
   assignee: string | null;
-  /** Rough hours, used by the dugnad planner to fit work into a weekend. */
+  /** Whole hours, used by the dugnad planner to fit work into a weekend. */
   estimatedHours: number | null;
+  requiredPeople: number | null;
+  suitableForDugnad: boolean;
+  weatherDependency: WeatherDependency | null;
+  /** Subtasks are work items with a parent; null means this is a top-level task. */
+  parentId: string | null;
+  startAt: string | null;
   dueDate: string | null;
+  position: number;
   visibility: Visibility;
+}
+
+/** Completed-of-total for a parent task's subtasks. */
+export function subtaskProgress(subtasks: Pick<WorkItem, 'status'>[]): {
+  done: number;
+  total: number;
+  label: string;
+} {
+  const total = subtasks.filter(task => task.status !== 'cancelled').length;
+  const done = subtasks.filter(task => task.status === 'done').length;
+  return { done, total, label: `${done} av ${total} underoppgaver fullført` };
 }
 
 export interface ActivityEntry {
@@ -97,6 +136,15 @@ export interface FundingScheme {
   status: SchemeStatus;
   projectId: string | null;
   visibility: Visibility;
+  /** How often it opens, in the scheme's own words. */
+  cycle?: string | null;
+  /** Free text such as "Normalt ca. 30 %". Never a number — see db/schema.ts. */
+  supportRate?: string | null;
+  matchRule?: string | null;
+  /** A human urgency note carried in from research, such as "HASTER". */
+  priorityNote?: string | null;
+  /** Where the row came from. Null means someone typed it in here. */
+  provenance?: string | null;
 }
 
 export interface FundingAngle {
@@ -109,6 +157,8 @@ export interface FundingAngle {
   verifiedAt: string | null;
   projectIds: string[];
   visibility: Visibility;
+  tags?: string | null;
+  provenance?: string | null;
 }
 
 export interface RisenEvent {
@@ -172,10 +222,21 @@ export interface Loaded<T> {
 }
 
 /** Work that is not finished, in the order a person would pick it up. */
-export const OPEN_WORK_STATUSES: WorkStatus[] = ['inbox', 'ready', 'doing', 'blocked'];
+export const OPEN_WORK_STATUSES: WorkStatus[] = ['inbox', 'planned', 'ready', 'in_progress', 'blocked'];
+
+/** Statuses that take an item out of the working set, for different reasons. */
+export const CLOSED_WORK_STATUSES: WorkStatus[] = ['done', 'cancelled'];
 
 export function isOpenWork(item: Pick<WorkItem, 'status'>): boolean {
-  return item.status !== 'done';
+  return !CLOSED_WORK_STATUSES.includes(item.status);
+}
+
+/**
+ * Work that can actually be started: open, not blocked, and not waiting on a
+ * decision. Used by the Klar nå view and the dugnad planner.
+ */
+export function isReadyWork(item: Pick<WorkItem, 'status' | 'type'>): boolean {
+  return (item.status === 'ready' || item.status === 'planned') && item.type !== 'decision';
 }
 
 /** Priority is stored as a label, so rank it here rather than sorting the text column. */

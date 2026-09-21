@@ -20,6 +20,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { buildSeedSql } from './seed-sql.mjs';
+import { buildLegacyImportSql } from './legacy-import-sql.mjs';
 
 /** Strip every line comment, then collapse the blank lines it leaves behind. */
 const stripComments = sql =>
@@ -57,24 +58,42 @@ for (const entry of journal.entries.sort((a, b) => a.idx - b.idx)) {
 
 const LIMIT = 9000;
 
-// The seed is larger than one paste, so split it into numbered parts on
-// statement boundaries. Every statement is INSERT OR IGNORE, so the parts are
-// independent and re-runnable, but they still go in order: later tables
-// reference earlier ones.
-const seedStatements = stripComments(await buildSeedSql('2026-09-20T00:00:00.000Z'))
-  .split('\n')
-  .filter(line => line.trim() !== '');
-const parts = [[]];
-let size = 0;
-for (const statement of seedStatements) {
-  if (size + statement.length + 1 > LIMIT && parts.at(-1).length > 0) {
-    parts.push([]);
-    size = 0;
+/**
+ * Splits a batch of statements into paste-sized files on statement boundaries.
+ *
+ * A single statement longer than the limit cannot be split without breaking it,
+ * so it gets a file of its own and the final size check below is what reports
+ * it — better a loud failure here than a truncated paste that applies half a
+ * row.
+ */
+const splitIntoParts = sql => {
+  const statements = sql.split('\n').filter(line => line.trim() !== '');
+  const parts = [[]];
+  let size = 0;
+  for (const statement of statements) {
+    if (size + statement.length + 1 > LIMIT && parts.at(-1).length > 0) {
+      parts.push([]);
+      size = 0;
+    }
+    parts.at(-1).push(statement);
+    size += statement.length + 1;
   }
-  parts.at(-1).push(statement);
-  size += statement.length + 1;
-}
-parts.forEach((part, index) => write(`seed-${String(index + 1).padStart(2, '0')}.sql`, part.join('\n')));
+  return parts;
+};
+
+// The seed is larger than one paste, so split it into numbered parts. Every
+// statement is INSERT OR IGNORE, so the parts are independent and re-runnable,
+// but they still go in order: later tables reference earlier ones.
+splitIntoParts(stripComments(await buildSeedSql('2026-09-20T00:00:00.000Z'))).forEach((part, index) =>
+  write(`seed-${String(index + 1).padStart(2, '0')}.sql`, part.join('\n')),
+);
+
+// The legacy funding catalogue. Upserts, so re-pasting a part is harmless, but
+// the parts still go in order: the join tables at the end reference the rows
+// the earlier parts create.
+splitIntoParts(stripComments(buildLegacyImportSql('2026-09-20').sql)).forEach((part, index) =>
+  write(`legacy-${String(index + 1).padStart(2, '0')}.sql`, part.join('\n')),
+);
 for (const file of written) {
   const body = readFileSync(file, 'utf8');
   if (body.includes('--')) throw new Error(`${file} still contains a SQL comment; it would break on a flattened paste`);
